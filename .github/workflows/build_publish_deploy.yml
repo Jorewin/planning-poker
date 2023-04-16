@@ -19,5 +19,5 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
     - name: Build and publish the Docker image
       run: |
-        docker build ./frontend --file Dockerfile --tag planning-poker-frontend:${{ github.sha }}
+        docker build ./frontend --file ./frontend/Dockerfile --tag planning-poker-frontend:${{ github.sha }}
         docker push planning-poker-frontend:${{ github.sha }}
