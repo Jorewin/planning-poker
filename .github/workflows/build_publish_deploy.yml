@@ -23,5 +23,5 @@ jobs:
           context: ./frontend
           file: ./frontend/Dockerfile
           push: true
-          tags: planning-poker-frontend:${{ github.sha }}
+          tags: rubberducks/planning-poker-frontend:${{ github.sha }}
           
