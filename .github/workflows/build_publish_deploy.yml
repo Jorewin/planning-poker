@@ -42,7 +42,7 @@ jobs:
       - uses: actions/checkout@v3
       
       - name: Replace variables
-        run:  cat ./kube/planning-poker.yaml | sed -e s/TAG/${{ github.sha }}/g > ./kube/planning-poker.yaml
+        run:  cat ./kube/planning-poker.yaml | sed -e s/TAG/${{ github.sha }}/g > deployment.yaml
         shell: bash
       
       - name: Azure login
@@ -67,5 +67,5 @@ jobs:
         uses: Azure/k8s-deploy@v4
         with:
           action: deploy
-          manifests: ./kube/planning-poker.yaml
+          manifests: deployment.yaml
           
