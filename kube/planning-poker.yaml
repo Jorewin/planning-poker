@@ -1,0 +1,34 @@
+#Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: planning-poker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: planning-poker
+  template:
+    metadata:
+      labels:
+        app: planning-poker
+    spec:
+      containers:
+        - name: planning-poker-frontend
+          image: rubberducks/planning-poker-frontend:0.0.1
+          ports:
+            - containerPort: 5173
+          imagePullPolicy: Always
+---
+#Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: planning-poker
+spec:
+  selector:
+    app: planning-poker
+  ports:
+    - port: 80
+      targetPort: 5173
+  type: LoadBalancer
