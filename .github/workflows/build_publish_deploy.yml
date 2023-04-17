@@ -41,6 +41,10 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       
+      - name: Replace variables
+        run: cat ./kube/planning-poker.yaml > sed 's/TAG/${{ github.sha }}' > ./kube/planning-poker.yaml
+        shell: bash
+      
       - name: Azure login
         uses: azure/login@v1.4.6
         with:
