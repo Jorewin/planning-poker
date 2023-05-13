@@ -18,13 +18,13 @@ const Rename = () => {
   return (
     <div className="absolute top-4 left-4 flex flex-col gap-4 justify-center items-center border-4 rounded-lg p-4 bg-white">
       <input
-        className="rounded-lg font-bold text-2xl px-2 py-1 bg-amber-100 text-amber-500"
+        className="rounded-lg font-bold text-2xl px-2 py-1 bg-green-100 text-green-500"
         type="text"
         value={usernameInput}
         onChange={handleInputChange}
       />
       <button
-        className="border rounded-lg px-2 py-1 bg-amber-500 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+        className="border rounded-lg px-2 py-1 bg-green-500 text-white disabled:opacity-50 disabled:cursor-not-allowed"
         onClick={handleSubmit}
         disabled={isDisabled}
       >

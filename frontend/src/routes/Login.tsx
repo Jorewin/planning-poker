@@ -10,7 +10,7 @@ const Login = () => {
     setUsernameInput(e.target.value);
   }
 
-  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  function handleSubmit(e: React.MouseEvent<HTMLButtonElement>) {
     e.preventDefault();
     if (!usernameInput) return;
     const user = {
@@ -21,27 +21,24 @@ const Login = () => {
     setUser(user);
   }
 
+  const isDisabled = !usernameInput;
+
   return (
-    <div className="login">
-      <form onSubmit={handleSubmit}>
-        <div className="flex flex-col justify-center items-center self-center gap-2">
-          <label htmlFor="username">Your unique username:</label>
-          <input
-            type="text"
-            id="username"
-            value={usernameInput}
-            onChange={handleInputChange}
-            className="border px-2 py-1 rounded-md"
-          />
-          <button
-            type="submit"
-            className="border px-2 py-1 bg-amber-500 text-white rounded-md disabled:cursor-not-allowed"
-            disabled={!usernameInput}
-          >
-            Submit
-          </button>
-        </div>
-      </form>
+    <div className="flex flex-col justify-center items-center self-center gap-2">
+      <label htmlFor="username">Your unique username:</label>
+      <input
+        className="rounded-lg font-bold text-2xl px-2 py-1 bg-green-100 text-green-500"
+        type="text"
+        value={usernameInput}
+        onChange={handleInputChange}
+      />
+      <button
+        className="border rounded-lg px-2 py-1 bg-green-500 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+        onClick={handleSubmit}
+        disabled={isDisabled}
+      >
+        Rename
+      </button>
     </div>
   );
 };
