@@ -6,6 +6,7 @@
 // import Results from "../components/Results";
 import { useUserContext } from "../contexts/UserContext";
 import { useSessionContext } from "../contexts/SessionContext";
+import Rename from "../components/Rename";
 
 const Game = () => {
   const { user } = useUserContext();
@@ -22,6 +23,7 @@ const Game = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <Rename />
       <div className="bg-gray-100 p-4 flex justify-center">
         <h1 className="text-2xl font-bold">Welcome {user?.username}!</h1>
       </div>
