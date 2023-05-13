@@ -1,3 +1,6 @@
+export type CardValue = 1 | 2 | 3 | 5 | 8 | 13 | 21 | 34 | 55 | 89 | 144;
+export const CardValues: CardValue[] = [1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144];
+
 export type User = {
   id: string;
   username: string;
@@ -5,7 +8,7 @@ export type User = {
 
 export type Vote = {
   userId: string;
-  cardValue: 1 | 2 | 3 | 5 | 8 | 13 | 21 | 34 | 55 | 89 | 144;
+  cardValue: CardValue;
 };
 
 export type GameRound = {

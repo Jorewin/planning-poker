@@ -7,6 +7,8 @@
 import { useUserContext } from "../contexts/UserContext";
 import { useSessionContext } from "../contexts/SessionContext";
 import Rename from "../components/Rename";
+import Card from "../components/Card";
+import { CardValues } from "../types";
 
 const Game = () => {
   const { user } = useUserContext();
@@ -22,10 +24,14 @@ const Game = () => {
   } = useSessionContext();
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div>
       <Rename />
-      <div className="bg-gray-100 p-4 flex justify-center">
+      <div className="flex justify-center">
         <h1 className="text-2xl font-bold">Welcome {user?.username}!</h1>
+
+        {CardValues.map((cardValue) => (
+          <Card key={cardValue} cardValue={cardValue} />
+        ))}
       </div>
     </div>
   );
