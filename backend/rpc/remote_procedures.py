@@ -1,4 +1,5 @@
 from functools import wraps
+from inspect import signature
 from typing import Callable, Concatenate, ParamSpec, TypeVar
 
 from django.http import HttpRequest
@@ -26,6 +27,15 @@ def register_player(func: Callable[Concatenate[int, HttpRequest, P], R]) -> Call
             request.session["player_id"] = player.id
 
         return func(request.session["player_id"], *args, **kwargs)
+
+    sig = signature(register_player_wrapper)
+    params = tuple(sig.parameters[key] for key in filter(lambda key: key != "player_id", sig.parameters.keys()))
+    sig = sig.replace(parameters=params)
+    register_player_wrapper.__signature__ = sig
+    register_player_wrapper.__annotations__ = {key: register_player_wrapper.__annotations__[key] for key in filter(
+        lambda x: x != "player_id",
+        register_player_wrapper.__annotations__.keys()
+    )}
 
     return register_player_wrapper
 
