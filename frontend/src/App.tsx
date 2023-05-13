@@ -1,4 +1,8 @@
-import { useUserContext, UserContext, UserProvider } from "./contexts/UserContext";
+import {
+  useUserContext,
+  UserContext,
+  UserProvider,
+} from "./contexts/UserContext";
 import { useSessionContext, SessionContext } from "./contexts/SessionContext";
 import Game from "./routes/Game";
 import Login from "./routes/Login";
@@ -15,10 +19,10 @@ function Routes() {
   }, [user]);
 
   return (
-    <>
+    <div className="p-4 min-h-screen bg-gray-50">
       {!user && <Login />}
       {user && <Game />}
-    </>
+    </div>
   );
 }
 
