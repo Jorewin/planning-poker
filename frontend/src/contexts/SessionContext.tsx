@@ -13,28 +13,24 @@ import { useUserContext } from "./UserContext";
 
 interface SessionContextProps {
   game: Game | null;
-  setGame: (game: Game | null) => void;
   currentRound: GameRound | null;
-  setCurrentRound: (round: GameRound | null) => void;
   currentRoundResult: GameRoundResult | null;
-  setCurrentRoundResult: (result: GameRoundResult | null) => void;
   currentVote: Vote | null;
   setVote: (cardValue: CardValue | null) => void;
   isGameActionDisabled: boolean;
   startRound: () => void;
+  finishRound: () => void;
 }
 
 export const SessionContext = createContext<SessionContextProps>({
   game: null,
-  setGame: () => {},
   currentRound: null,
-  setCurrentRound: () => {},
   currentRoundResult: null,
-  setCurrentRoundResult: () => {},
   currentVote: null,
   setVote: () => {},
   isGameActionDisabled: false,
   startRound: () => {},
+  finishRound: () => {},
 });
 
 export const useSessionContext = () => useContext(SessionContext);
@@ -122,15 +118,13 @@ export const SessionProvider: React.FC = ({ children }) => {
   const api = useMemo(() => {
     return {
       game,
-      setGame,
       currentRound,
-      setCurrentRound,
       currentRoundResult,
-      setCurrentRoundResult,
       currentVote,
       setVote,
       isGameActionDisabled,
       startRound,
+      finishRound,
     };
   }, [
     game,

@@ -20,9 +20,6 @@ const Game = () => {
     currentRound,
     currentRoundResult,
     currentVote,
-    setCurrentRound,
-    setCurrentRoundResult,
-    setGame,
   } = useSessionContext();
 
   return (
