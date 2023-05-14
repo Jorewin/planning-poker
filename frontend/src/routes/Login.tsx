@@ -37,7 +37,7 @@ const Login = () => {
         onClick={handleSubmit}
         disabled={isDisabled}
       >
-        Rename
+        Ready
       </button>
     </div>
   );
