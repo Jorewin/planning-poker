@@ -9,6 +9,9 @@ import { useSessionContext } from "../contexts/SessionContext";
 import Rename from "../components/Rename";
 import Card from "../components/Card";
 import { CardValues } from "../types";
+import Cards from "../components/Cards";
+import GameActions from "../components/GameActions";
+import GameDetails from "../components/GameDetails";
 
 const Game = () => {
   const { user } = useUserContext();
@@ -19,17 +22,16 @@ const Game = () => {
     currentVote,
     setCurrentRound,
     setCurrentRoundResult,
-    setCurrentVote,
     setGame,
   } = useSessionContext();
 
   return (
     <div className="flex">
       <Rename />
-      <div className="w-4/5 flex justify-center">
-        {CardValues.map((cardValue) => (
-          <Card key={cardValue} cardValue={cardValue} />
-        ))}
+      <Cards />
+      <div className={`w-1/6 flex flex-col gap-4`}>
+        <GameActions />
+        <GameDetails />
       </div>
     </div>
   );
