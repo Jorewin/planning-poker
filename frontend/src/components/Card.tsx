@@ -24,7 +24,7 @@ function Card({ cardValue }: CardProps) {
       ${isSelected ? "bg-green-500" : "bg-gray-800 hover:bg-green-500"}`}
       onClick={handleSelect}
     >
-      {cardValue}
+      {cardValue ? cardValue : "?"}
     </div>
   );
 }
