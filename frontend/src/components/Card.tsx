@@ -1,12 +1,12 @@
 import { useState } from "react";
-import { CardValue, Vote } from "../types";
+import { CardValue, GameStatus, Vote } from "../types";
 import { useSessionContext } from "../contexts/SessionContext";
 type CardProps = {
   cardValue: CardValue;
 };
 
 function Card({ cardValue }: CardProps) {
-  const { currentVote, setVote } = useSessionContext();
+  const { currentVote, setVote, isGameActionDisabled: isDisabled } = useSessionContext();
 
   function handleSelect() {
     if (currentVote === cardValue) {
@@ -15,13 +15,16 @@ function Card({ cardValue }: CardProps) {
       setVote(cardValue);
     }
   }
-  
+
   const isSelected = currentVote?.cardValue === cardValue;
 
   return (
     <div
       className={`flex items-center justify-center w-16 h-16 m-2 text-2xl font-bold text-white bg-gray-800 rounded-lg cursor-pointer 
-      ${isSelected ? "bg-green-500" : "bg-gray-800 hover:bg-green-500"}`}
+      ${isSelected && "bg-green-500"}
+      ${isDisabled && "opacity-50 cursor-not-allowed"}
+      ${!isDisabled && !isSelected && "hover:bg-green-500"}
+      `}
       onClick={handleSelect}
     >
       {cardValue ? cardValue : "?"}

@@ -25,22 +25,29 @@ export type Vote = {
 };
 
 export type GameRound = {
-  id: string;
   votes: Vote[];
   result: GameRoundResult | null;
 };
 
 export type GameRoundResult = {
   average: number;
-  consensus: boolean;
+  consensus: number;
 };
 
-enum GameStatus {
-  CREATED = "CREATED",
+export enum GameStatus {
+  NOT_READY = "NOT_READY",
   READY = "READY",
   ROUND_IN_PROGRESS = "ROUND_IN_PROGRESS",
   ROUND_READY = "ROUND_READY",
   ROUND_FINISHED = "ROUND_FINISHED",
+}
+
+export enum GameStatusMessage {
+  NOT_READY = "Start a game or join one",
+  READY = "Ready to start",
+  ROUND_IN_PROGRESS = "Round in progress",
+  ROUND_READY = "Ready to vote",
+  ROUND_FINISHED = "Round finished",
 }
 
 export type Game = {
@@ -49,5 +56,6 @@ export type Game = {
   users: User[];
   rounds: GameRound[];
   status: GameStatus;
-  currentRound: GameRound;
+  currentRound: GameRound | null;
+  code: string;
 };

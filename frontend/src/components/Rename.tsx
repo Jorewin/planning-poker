@@ -16,9 +16,9 @@ const Rename = () => {
   const isDisabled = usernameInput === user!.username || !usernameInput;
 
   return (
-    <div className="w-1/5 flex flex-col gap-4 justify-center items-center border-4 rounded-lg p-4 bg-white">
+    <div className="w-1/6 flex flex-col gap-4 items-center border-4 rounded-lg p-4 bg-white">
       <input
-        className="rounded-lg font-bold px-2 py-1 bg-green-100 text-green-500"
+        className="w-full rounded-lg font-bold px-2 py-1 bg-green-100 text-green-500"
         type="text"
         value={usernameInput}
         onChange={handleInputChange}
