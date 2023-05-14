@@ -24,11 +24,9 @@ const Game = () => {
   } = useSessionContext();
 
   return (
-    <div>
+    <div className="flex">
       <Rename />
-      <div className="flex justify-center">
-        <h1 className="text-2xl font-bold">Welcome {user?.username}!</h1>
-
+      <div className="w-4/5 flex justify-center">
         {CardValues.map((cardValue) => (
           <Card key={cardValue} cardValue={cardValue} />
         ))}
