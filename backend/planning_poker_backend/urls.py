@@ -15,9 +15,8 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.urls import path
-from modernrpc.core import Protocol
 from modernrpc.views import RPCEntryPoint
 
 urlpatterns = [
-    path("", RPCEntryPoint.as_view(enable_doc=True))
+    path("", RPCEntryPoint.as_view(enable_doc=True, template_name="modernrpc/bootstrap4/doc_index.html"))
 ]
