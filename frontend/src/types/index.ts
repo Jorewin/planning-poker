@@ -58,4 +58,5 @@ export type Game = {
   status: GameStatus;
   currentRound: GameRound | null;
   code: string;
+  roundResults: GameRoundResult[];
 };

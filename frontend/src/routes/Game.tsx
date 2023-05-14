@@ -12,6 +12,7 @@ import { CardValues } from "../types";
 import Cards from "../components/Cards";
 import GameActions from "../components/GameActions";
 import GameDetails from "../components/GameDetails";
+import Rounds from "../components/Rounds";
 
 const Game = () => {
   const { user } = useUserContext();
@@ -29,6 +30,7 @@ const Game = () => {
       <div className={`w-1/6 flex flex-col gap-4`}>
         <GameActions />
         <GameDetails />
+        <Rounds />
       </div>
     </div>
   );

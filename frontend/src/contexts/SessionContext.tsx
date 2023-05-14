@@ -10,6 +10,7 @@ import {
   Vote,
 } from "../types";
 import { useUserContext } from "./UserContext";
+import { v4 as uuidv4 } from "uuid";
 
 interface SessionContextProps {
   game: Game | null;
@@ -20,6 +21,7 @@ interface SessionContextProps {
   isGameActionDisabled: boolean;
   startRound: () => void;
   finishRound: () => void;
+  startNewGame: () => void;
 }
 
 export const SessionContext = createContext<SessionContextProps>({
@@ -31,6 +33,7 @@ export const SessionContext = createContext<SessionContextProps>({
   isGameActionDisabled: false,
   startRound: () => {},
   finishRound: () => {},
+  startNewGame: () => {},
 });
 
 export const useSessionContext = () => useContext(SessionContext);
@@ -99,16 +102,24 @@ export const SessionProvider: React.FC = ({ children }) => {
     } as GameRoundResult;
 
     setCurrentRoundResult(result);
+    const rounds = game?.rounds.push(result);
     setGame({
       ...game,
       status: GameStatus.ROUND_FINISHED,
-      rounds: game.rounds.map((round) => {
-        if (round.id === currentRound.id) {
-          return result;
-        }
-        return round;
-      }),
+      roundResults
     });
+  }
+
+  function startNewGame() {
+    setGame({
+      id: uuidv4(),
+      status: GameStatus.READY,
+      rounds: [],
+      code: "123456",
+      users: [user],
+      currentRound: null,
+      name: "My Game",
+    } as Game);
   }
 
   const isGameActionDisabled = useMemo(() => {
@@ -125,6 +136,7 @@ export const SessionProvider: React.FC = ({ children }) => {
       isGameActionDisabled,
       startRound,
       finishRound,
+      startNewGame
     };
   }, [
     game,
