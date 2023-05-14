@@ -1,16 +1,22 @@
 import { useState } from "react";
 import { CardValue, Vote } from "../types";
-
+import { useSessionContext } from "../contexts/SessionContext";
 type CardProps = {
   cardValue: CardValue;
 };
 
 function Card({ cardValue }: CardProps) {
-  const [isSelected, setIsSelected] = useState(false);
+  const { currentVote, setVote } = useSessionContext();
 
   function handleSelect() {
-    setIsSelected((isSelected) => !isSelected);
+    if (currentVote === cardValue) {
+      setVote(null);
+    } else {
+      setVote(cardValue);
+    }
   }
+  
+  const isSelected = currentVote?.cardValue === cardValue;
 
   return (
     <div

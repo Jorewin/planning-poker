@@ -1,7 +1,8 @@
 // a custom react context to store the session data with types from ../types
 
 import React, { createContext, useContext, useMemo, useState } from "react";
-import { Game, GameRound, GameRoundResult, Vote } from "../types";
+import { CardValue, Game, GameRound, GameRoundResult, Vote } from "../types";
+import { useUserContext } from "./UserContext";
 
 interface SessionContextProps {
   game: Game | null;
@@ -11,7 +12,7 @@ interface SessionContextProps {
   currentRoundResult: GameRoundResult | null;
   setCurrentRoundResult: (result: GameRoundResult | null) => void;
   currentVote: Vote | null;
-  setCurrentVote: (vote: Vote | null) => void;
+  setVote: (cardValue: CardValue | null) => void;
 }
 
 export const SessionContext = createContext<SessionContextProps>({
@@ -22,7 +23,7 @@ export const SessionContext = createContext<SessionContextProps>({
   currentRoundResult: null,
   setCurrentRoundResult: () => {},
   currentVote: null,
-  setCurrentVote: () => {},
+  setVote: () => {},
 });
 
 export const useSessionContext = () => useContext(SessionContext);
@@ -33,6 +34,11 @@ export const SessionProvider: React.FC = ({ children }) => {
   const [currentRoundResult, setCurrentRoundResult] =
     useState<GameRoundResult | null>(null);
   const [currentVote, setCurrentVote] = useState<Vote | null>(null);
+  const { user } = useUserContext();
+
+  function setVote(cardValue: CardValue) {
+    setCurrentVote({ cardValue: cardValue, userId: user?.id } as Vote);
+  }
 
   const api = useMemo(() => {
     return {
@@ -43,7 +49,7 @@ export const SessionProvider: React.FC = ({ children }) => {
       currentRoundResult,
       setCurrentRoundResult,
       currentVote,
-      setCurrentVote,
+      setVote,
     };
   }, [game, currentRound, currentRoundResult, currentVote]);
 

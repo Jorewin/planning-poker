@@ -1,9 +1,9 @@
+import { SessionProvider } from "./contexts/SessionContext";
 import {
   useUserContext,
   UserContext,
   UserProvider,
 } from "./contexts/UserContext";
-import { useSessionContext, SessionContext } from "./contexts/SessionContext";
 import Game from "./routes/Game";
 import Login from "./routes/Login";
 import { useEffect } from "react";
@@ -30,7 +30,9 @@ export default function App() {
   return (
     <>
       <UserProvider>
-        <Routes />
+        <SessionProvider>
+          <Routes />
+        </SessionProvider>
       </UserProvider>
     </>
   );
