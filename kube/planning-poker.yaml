@@ -19,6 +19,11 @@ spec:
           ports:
             - containerPort: 5173
           imagePullPolicy: Always
+        - name: planning-poker-backend
+          image: rubberducks/planning-poker-backend:TAG
+          ports:
+            - containerPort: 8000
+          imagePullPolicy: Always
 ---
 #Service
 apiVersion: v1
@@ -31,4 +36,6 @@ spec:
   ports:
     - port: 80
       targetPort: 5173
+    - port: 8000
+      targetPort: 8000
   type: LoadBalancer
