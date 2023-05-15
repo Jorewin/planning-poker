@@ -35,7 +35,9 @@ spec:
     app: planning-poker
   ports:
     - port: 80
+      name: tcp-80
       targetPort: 5173
     - port: 8000
+      name: tcp-8000
       targetPort: 8000
   type: LoadBalancer
