@@ -8,9 +8,7 @@ const Cards = () => {
 
   return (
     <div
-      className={`w-4/6 flex justify-center ${
-        isDisabled && "opacity-50 cursor-not-allowed"
-      }`}
+      className={`flex justify-center gap-2`}
     >
       {CardValues.map((cardValue) => (
         <Card key={cardValue} cardValue={cardValue} />

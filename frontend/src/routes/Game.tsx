@@ -16,18 +16,16 @@ import Rounds from "../components/Rounds";
 
 const Game = () => {
   const { user } = useUserContext();
-  const {
-    game,
-    currentRound,
-    currentRoundResult,
-    currentVote,
-  } = useSessionContext();
+  const { game, currentRound, currentRoundResult, currentVote } =
+    useSessionContext();
 
   return (
     <div className="flex">
-      <Rename />
-      <Cards />
-      <div className={`w-1/6 flex flex-col gap-4`}>
+      <div className="w-4/5">
+        <Cards />
+      </div>
+      <div className={`w-1/5 flex flex-col gap-4`}>
+        <Rename />
         <GameActions />
         <GameDetails />
         <Rounds />
