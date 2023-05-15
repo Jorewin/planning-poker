@@ -91,18 +91,23 @@ USE_I18N = True
 
 USE_TZ = True
 
+STATIC_URL="static/"
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+# https://django-modern-rpc.readthedocs.io/en/latest/basics/settings.html#modernrpc-doc-format
+
+MODERNRPC_DOC_FORMAT = "rst"
+
+# https://django-modern-rpc.readthedocs.io/en/latest/basics/settings.html#modernrpc-log-exceptions
+
+MODERNRPC_LOG_EXCEPTIONS = False
+
 # https://django-modern-rpc.readthedocs.io/en/latest/basics/register_procedure.html#introduction
 
 MODERNRPC_METHODS_MODULES = [
     "rpc.remote_procedures",
 ]
-
-# MODERNRPC_DOC_FORMAT
-
-MODERNRPC_DOC_FORMAT ="rst"
