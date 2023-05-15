@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useMemo, useState } from "react";
 import {
   CardValue,
+  CardValues,
   Game,
   GameRound,
   GameRoundResult,
@@ -49,13 +50,10 @@ export const SessionProvider: React.FC = ({ children }) => {
   function setVote(cardValue: CardValue) {
     if (isGameActionDisabled) return;
     setCurrentVote({ cardValue: cardValue, userId: user?.id } as Vote);
-    // update the votes in the current round (replace the current user's vote)
-    const updatedVotes = currentRound?.votes.map((vote) => {
-      if (vote.userId === user?.id) {
-        return { ...vote, cardValue: cardValue };
-      }
-      return vote;
-    });
+
+    const updatedVotes = currentRound?.votes
+      .filter((vote) => vote.userId !== user?.id)
+      .concat({ cardValue: cardValue, userId: user?.id } as Vote);
 
     setCurrentRound({
       ...currentRound,
@@ -76,20 +74,25 @@ export const SessionProvider: React.FC = ({ children }) => {
     } as GameRound;
 
     setCurrentRound(round);
+    setCurrentVote(null);
     setGame({
       ...game,
       status: GameStatus.ROUND_IN_PROGRESS,
-      rounds: [...game?.rounds, round],
     });
   }
 
   function finishRound() {
-    if (!currentRound) return;
+    if (!currentRound || !game) return;
 
-    // average is closest fibonacci number to the average of all votes
-    const average =
+    const average = Math.round(
       currentRound?.votes.reduce((acc, vote) => acc + vote.cardValue, 0) /
-      currentRound?.votes.length;
+        currentRound?.votes.length
+    );
+
+    // now round the average to the closest fibonacci number
+    const closestFibonacci = CardValues.reduce((prev, curr) =>
+      Math.abs(curr - average) < Math.abs(prev - average) ? curr : prev
+    );
 
     // consensus is ratio of votes that are the same as the average
     const consensus =
@@ -97,29 +100,30 @@ export const SessionProvider: React.FC = ({ children }) => {
       currentRound?.votes.length;
 
     const result = {
-      average,
+      average: closestFibonacci,
       consensus,
     } as GameRoundResult;
 
     setCurrentRoundResult(result);
-    const rounds = game?.rounds.push(result);
     setGame({
       ...game,
-      status: GameStatus.ROUND_FINISHED,
-      roundResults
+      status: GameStatus.READY,
+      roundResults: [...game.roundResults, result],
     });
   }
 
   function startNewGame() {
     setGame({
+      code:uuidv4().substr(0, 4).toUpperCase(),
       id: uuidv4(),
       status: GameStatus.READY,
       rounds: [],
-      code: "123456",
       users: [user],
       currentRound: null,
       name: "My Game",
+      roundResults: [],
     } as Game);
+    setCurrentVote(null);
   }
 
   const isGameActionDisabled = useMemo(() => {
@@ -136,7 +140,7 @@ export const SessionProvider: React.FC = ({ children }) => {
       isGameActionDisabled,
       startRound,
       finishRound,
-      startNewGame
+      startNewGame,
     };
   }, [
     game,

@@ -2,7 +2,7 @@ import { useSessionContext } from "../contexts/SessionContext";
 import { GameStatusMessage } from "../types";
 
 const GameDetails = () => {
-  const { game, setGame, startRound } = useSessionContext();
+  const { game } = useSessionContext();
 
   return (
     <div className="flex flex-col border-4 rounded-lg p-4 gap-2">
