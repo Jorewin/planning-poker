@@ -1,15 +1,39 @@
-import React from "react";
-import GameSession from "./routes/GameSession"
-import Timer from "./components/Timer";
+import { SessionProvider } from "./contexts/SessionContext";
+import {
+  useUserContext,
+  UserContext,
+  UserProvider,
+} from "./contexts/UserContext";
+import Game from "./routes/Game";
+import Login from "./routes/Login";
+import { useEffect } from "react";
+import { v4 as uuidv4 } from "uuid";
 
-export default function App() {
-  function handleVote(cardValue: number) {
-    console.log(cardValue);
-  }
+function Routes() {
+  const { user } = useUserContext();
+
+  useEffect(() => {
+    if (user) {
+      localStorage.setItem("user", JSON.stringify(user));
+    }
+  }, [user]);
 
   return (
+    <div className="p-4 min-h-screen bg-gray-50">
+      {!user && <Login />}
+      {user && <Game />}
+    </div>
+  );
+}
+
+export default function App() {
+  return (
     <>
-      <GameSession />
+      <UserProvider>
+        <SessionProvider>
+          <Routes />
+        </SessionProvider>
+      </UserProvider>
     </>
   );
 }

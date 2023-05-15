@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: planning-poker-frontend
-          image: rubberducks/planning-poker-frontend:0.0.1
+          image: rubberducks/planning-poker-frontend:TAG
           ports:
             - containerPort: 5173
           imagePullPolicy: Always
