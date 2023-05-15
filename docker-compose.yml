@@ -6,12 +6,12 @@ services:
 #      - "80:80"
 #    depends_on:
 #      - frontend
-#  backend:
-#    build:
-#      context: ./backend
-#      dockerfile: Dockerfile
-#    ports:
-#      - "8888:8888"
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
   frontend:
     build:
       context: ./frontend
