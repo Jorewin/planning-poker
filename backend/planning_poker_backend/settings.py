@@ -35,11 +35,13 @@ INSTALLED_APPS = [
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'modernrpc',
+    'corsheaders'
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
 ]
@@ -111,3 +113,5 @@ MODERNRPC_LOG_EXCEPTIONS = False
 MODERNRPC_METHODS_MODULES = [
     "rpc.remote_procedures",
 ]
+
+CORS_ALLOW_ALL_ORIGINS = True
