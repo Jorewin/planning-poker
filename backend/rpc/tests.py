@@ -6,8 +6,6 @@ from django.test import LiveServerTestCase
 
 from xmlrpc.client import Fault, Transport, ServerProxy, INTERNAL_ERROR
 
-from .dto import PlayerSelectionDTO
-
 
 class CookiesTransport(Transport):
     """A Transport (HTTP) subclass that retains cookies over its lifetime."""
