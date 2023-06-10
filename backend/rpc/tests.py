@@ -1,8 +1,12 @@
 from copy import deepcopy
-from django.test import LiveServerTestCase
 from functools import wraps
 from typing import Any
+
+from django.test import LiveServerTestCase
+
 from xmlrpc.client import Fault, Transport, ServerProxy, INTERNAL_ERROR
+
+from .dto import PlayerSelectionDTO
 
 
 class CookiesTransport(Transport):
@@ -231,10 +235,11 @@ class RPCTestCase(LiveServerTestCase):
         self.assumeIsInstance(self.clients[1].get_selection(), int)
 
         # when
-        returned_selections = self.clients[1].get_selections()
+        returned_player_selections = self.clients[1].get_selections()
 
         # then
-        self.assertEqual([selection], returned_selections)
+        self.assertIsInstance(returned_player_selections, list)
+        self.assertEqual([selection], [x.get("selection") for x in returned_player_selections])
 
     def test_get_selections_with_two_players(self):
         # given
@@ -248,11 +253,11 @@ class RPCTestCase(LiveServerTestCase):
         self.assumeIsInstance(self.clients[2].get_selection(), int)
 
         # when
-        returned_selections = self.clients[1].get_selections()
+        returned_player_selections = self.clients[1].get_selections()
 
         # then
-        self.assertIsInstance(returned_selections, list)
-        self.assertEqual(selections, sorted(returned_selections))
+        self.assertIsInstance(returned_player_selections, list)
+        self.assertEqual(selections, sorted(x.get("selection") for x in returned_player_selections))
 
     def test_returned_selections_are_the_same(self):
         # given
@@ -267,11 +272,11 @@ class RPCTestCase(LiveServerTestCase):
         self.assumeIsInstance(self.clients[2].get_selection(), int)
 
         # when
-        returned_selections_1 = self.clients[1].get_selections()
-        returned_selections_2 = self.clients[1].get_selections()
+        returned_player_selections_1 = self.clients[1].get_selections()
+        returned_player_selections_2 = self.clients[1].get_selections()
 
         # then
-        self.assertEqual(returned_selections_1, returned_selections_2)
+        self.assertEqual(returned_player_selections_1, returned_player_selections_2)
 
     def test_returned_selections_are_empty_when_no_selection(self):
         # given
@@ -280,10 +285,11 @@ class RPCTestCase(LiveServerTestCase):
         self.assumeIsNone(self.clients[1].get_selection())
 
         # when
-        returned_selections = self.clients[1].get_selections()
+        returned_player_selections = self.clients[1].get_selections()
 
         # then
-        self.assertIsNone(returned_selections)
+        for player_selection in returned_player_selections:
+            self.assumeIsNone(player_selection.get("selection"))
 
     def test_cant_get_selections_when_not_in_session(self):
         # given

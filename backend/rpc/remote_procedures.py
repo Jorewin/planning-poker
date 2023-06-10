@@ -7,6 +7,7 @@ from django.http import HttpRequest
 from modernrpc.core import rpc_method, REQUEST_KEY
 from .models import Player, Session
 
+from .dto import PlayerSelectionDTO
 
 P = ParamSpec('P')
 R = TypeVar('R')
@@ -188,7 +189,7 @@ def reset_selection(player_id: int, **_):
 
 @rpc_method
 @register_player
-def get_selections(player_id: int, **_) -> list[int] | None:
+def get_selections(player_id: int, **_) -> list[PlayerSelectionDTO]:
     """Gets all selections in this player's session if every player is ready.
 
     :param player_id: current player's id
@@ -202,10 +203,9 @@ def get_selections(player_id: int, **_) -> list[int] | None:
 
     session = player.session
 
-    if session.ready_players_number != session.players_number:
-        return None
-
     players = session.player_set.all()
-    selections = [x.selection for x in players]
 
-    return selections
+    if session.ready_players_number != session.players_number:
+        return [PlayerSelectionDTO(x.session.id) for x in players]
+
+    return [PlayerSelectionDTO(x.session.id, x.selection) for x in players]
