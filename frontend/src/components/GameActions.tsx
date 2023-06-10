@@ -1,23 +1,69 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useSessionContext } from "../contexts/SessionContext";
 import { CardValues, GameStatus, GameStatusMessage } from "../types";
 import Card from "./Card";
 
-const GameActions = () => {
-  const { game, startRound, startNewGame, finishRound } = useSessionContext();
-  const { isGameActionDisabled: isDisabled } = useSessionContext();
-
-  const canStartRound = game?.status === GameStatus.READY || game?.status === GameStatus.ROUND_FINISHED;
-  const canFinishRound = game?.status === GameStatus.ROUND_IN_PROGRESS;
+function JoinGame() {
+  const { joinGame, startNewGame } = useSessionContext();
+  const [gameId, setGameId] = useState("");
 
   return (
-    <div className="flex flex-col border-4 rounded-lg p-4 gap-2">
+    <>
       <button
         className="border rounded-lg px-2 py-1 bg-green-500 text-white disabled:opacity-50 disabled:cursor-not-allowed"
         onClick={startNewGame}
       >
         New Game
       </button>
+      <div className="flex flex-row justify-center">or</div>
+      <hr />
+      <input
+        className="border rounded-lg px-2 py-1"
+        placeholder="Game ID"
+        value={gameId}
+        onChange={(e) => setGameId(e.target.value)}
+      />
+      <button
+        className="border rounded-lg px-2 py-1 bg-green-500 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+        onClick={() => joinGame(gameId)}
+      >
+        Join Game
+      </button>
+    </>
+  );
+}
+
+const GameActions = () => {
+  const {
+    game,
+    startRound,
+    startNewGame,
+    finishRound,
+    leaveGame,
+    currentVote,
+    setVote,
+  } = useSessionContext();
+  const { isGameActionDisabled } = useSessionContext();
+
+  const canStartRound =
+    game?.status === GameStatus.READY ||
+    game?.status === GameStatus.ROUND_FINISHED;
+  const canFinishRound = game?.status === GameStatus.ROUND_IN_PROGRESS;
+  const canLeaveGame = !!game;
+  const canClearVote = !isGameActionDisabled && currentVote?.cardValue;
+
+  return (
+    <div className="flex flex-col border-4 rounded-lg p-4 gap-2">
+      {!game && <JoinGame />}
+      {canClearVote && (
+        // clear the selection button
+        <button
+          className="border rounded-lg px-2 py-1 bg-green-500 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+          onClick={() => setVote(null)}
+        >
+          Clear Selection
+        </button>
+      )}
       {canStartRound && (
         <button
           className="border rounded-lg px-2 py-1 bg-green-500 text-white disabled:opacity-50 disabled:cursor-not-allowed"
@@ -32,6 +78,14 @@ const GameActions = () => {
           onClick={finishRound}
         >
           Finish Round
+        </button>
+      )}
+      {canLeaveGame && (
+        <button
+          className="border rounded-lg px-2 py-1 bg-red-500 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+          onClick={leaveGame}
+        >
+          Leave Game
         </button>
       )}
     </div>
