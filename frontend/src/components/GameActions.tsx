@@ -36,19 +36,12 @@ function JoinGame() {
 const GameActions = () => {
   const {
     game,
-    startRound,
-    startNewGame,
-    finishRound,
     leaveGame,
     currentVote,
     setVote,
   } = useSessionContext();
   const { isGameActionDisabled } = useSessionContext();
 
-  const canStartRound =
-    game?.status === GameStatus.READY ||
-    game?.status === GameStatus.ROUND_FINISHED;
-  const canFinishRound = game?.status === GameStatus.ROUND_IN_PROGRESS;
   const canLeaveGame = !!game;
   const canClearVote = !isGameActionDisabled && currentVote?.cardValue;
 
@@ -62,22 +55,6 @@ const GameActions = () => {
           onClick={() => setVote(null)}
         >
           Clear Selection
-        </button>
-      )}
-      {canStartRound && (
-        <button
-          className="border rounded-lg px-2 py-1 bg-green-500 text-white disabled:opacity-50 disabled:cursor-not-allowed"
-          onClick={startRound}
-        >
-          Start Round
-        </button>
-      )}
-      {canFinishRound && (
-        <button
-          className="border rounded-lg px-2 py-1 bg-red-500 text-white disabled:opacity-50 disabled:cursor-not-allowed"
-          onClick={finishRound}
-        >
-          Finish Round
         </button>
       )}
       {canLeaveGame && (
