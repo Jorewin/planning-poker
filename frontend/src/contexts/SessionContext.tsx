@@ -7,13 +7,23 @@ import React, {
   useMemo,
   useState,
 } from "react";
-import { CardValue, CardValues, Game, GameStatus, Vote } from "../types";
+import {
+  CardValue,
+  CardValues,
+  Game,
+  GameRoundResult,
+  Player,
+  Vote,
+} from "../types";
 import { useUserContext } from "./UserContext";
 import { v4 as uuidv4 } from "uuid";
+import { getClosestFibonacci } from "../utils";
 
 interface SessionContextProps {
   game: Game | null;
   currentVote: Vote | null;
+  roundResult: GameRoundResult | null;
+  players: Player[];
   setVote: (cardValue: CardValue | null) => void;
   isGameActionDisabled: boolean;
   startNewGame: () => void;
@@ -24,8 +34,10 @@ interface SessionContextProps {
 export const SessionContext = createContext<SessionContextProps>({
   game: null,
   currentVote: null,
-  setVote: () => {},
   isGameActionDisabled: false,
+  roundResult: null,
+  players: [],
+  setVote: () => {},
   startNewGame: () => {},
   leaveGame: () => {},
   joinGame: () => {},
@@ -36,15 +48,17 @@ export const useSessionContext = () => useContext(SessionContext);
 export const SessionProvider: React.FC = ({ children }) => {
   const [game, setGame] = useState<Game | null>(null);
   const [currentVote, setCurrentVote] = useState<Vote | null>(null);
+  const [roundResult, setRoundResult] = useState<GameRoundResult | null>(null);
+  const [players, setPlayers] = useState<Player[]>([]);
   const { user } = useUserContext();
 
-  const isGameActionDisabled = !game?.id && !!user && !currentVote?.cardValue;
-
+  const isGameActionDisabled = !game?.id || !user || currentVote?.cardValue;
+  
   async function setVote(cardValue: CardValue) {
-    if (isGameActionDisabled) return;
+    if (!game || !user) return;
 
     if (cardValue) {
-      await fetch("/rpc", {
+      const makeSelectionResullt = await fetch("/rpc", {
         method: "POST",
         body: JSON.stringify({
           jsonrpc: "2.0",
@@ -52,27 +66,14 @@ export const SessionProvider: React.FC = ({ children }) => {
           params: [cardValue],
           id: user?.id,
         }),
-      });
+      }).then((res) => res.json());
 
-      const selectionResult = await fetch("/rpc", {
-        method: "POST",
-        body: JSON.stringify({
-          jsonrpc: "2.0",
-          method: "get_selection",
-          id: user?.id,
-        }),
-      });
+      if (makeSelectionResullt.error) return;
 
-      const selectionsResult = await fetch("/rpc", {
-        method: "POST",
-        body: JSON.stringify({
-          jsonrpc: "2.0",
-          method: "get_selections",
-          id: user?.id,
-        }),
-      });
+      const selections = await getSelections();
+      setCurrentVote({ cardValue: cardValue, userId: user?.id } as Vote);
     } else {
-      await fetch("/rpc", {
+      const res = await fetch("/rpc", {
         method: "POST",
         body: JSON.stringify({
           jsonrpc: "2.0",
@@ -80,13 +81,15 @@ export const SessionProvider: React.FC = ({ children }) => {
           id: user?.id,
         }),
       });
-    }
 
-    setCurrentVote({ cardValue: cardValue, userId: user?.id } as Vote);
+      if (res.ok) {
+        setCurrentVote(null);
+      }
+    }
   }
 
   async function startNewGame() {
-    if(!user) return;
+    if (!user) return;
 
     const res = await fetch("/rpc", {
       method: "POST",
@@ -104,19 +107,15 @@ export const SessionProvider: React.FC = ({ children }) => {
       code: gameId,
       users: [user],
       name: "My Game",
-      roundResults: [],
     });
-    
   }
 
   async function leaveGame() {
     if (!game || !user) return;
 
-    const updatedUsers = game.users.filter((u) => u.id !== user.id);
-
     setGame({
       ...game,
-      users: updatedUsers,
+      users: [user],
     });
 
     const res = await fetch("/rpc", {
@@ -124,7 +123,6 @@ export const SessionProvider: React.FC = ({ children }) => {
       body: JSON.stringify({
         jsonrpc: "2.0",
         method: "leave_session",
-        id: user?.id,
       }),
     });
 
@@ -133,7 +131,7 @@ export const SessionProvider: React.FC = ({ children }) => {
     }
   }
 
-  async function joinGame(gameId: string) {
+  async function joinGame(gameId: string) {    
     if (!user) return;
 
     const res = await fetch("/rpc", {
@@ -144,51 +142,100 @@ export const SessionProvider: React.FC = ({ children }) => {
         params: [Number(gameId)],
         id: user?.id,
       }),
-    });
+    }).then((res) => res.json());
 
-    if (res.ok) {
+    if (!res.error) {
       setGame({
         id: gameId,
         code: gameId,
         users: [user],
         name: "My Game",
-        roundResults: [],
       });
 
-      const selectionResult = await fetch("/rpc", {
+      const selectionResponse = await getSelections();
+    }
+  }
+
+  async function getSelections() {
+    const res = await fetch("/rpc", {
+      method: "POST",
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        method: "get_selections",
+        id: user?.id,
+      }),
+    }).then((res) => res.json());
+
+    const selections = res.result;
+
+    if (selections.every((s: any) => s.selection)) {
+      const sum = selections.reduce(
+        (acc: number, s: any) => acc + s.selection,
+        0
+      );
+
+      const average = Math.round(sum / selections.length);
+      const consensus = getClosestFibonacci(average);
+
+      setRoundResult((prev) => ({ 
+        ...prev,
+        consensus,
+        average,
+      }))
+
+      // await fetch("/rpc", {
+      //   method: "POST",
+      //   body: JSON.stringify({
+      //     jsonrpc: "2.0",
+      //     method: "reset_selection",
+      //     id: user?.id,
+      //   }),
+      // });
+
+      // console.log("reset selection");
+
+      // setCurrentVote(null);
+      return null;
+    }
+
+    return res.result;
+  }
+
+  useEffect(() => {
+    if (!game?.id) {
+      fetch("/rpc", {
         method: "POST",
         body: JSON.stringify({
           jsonrpc: "2.0",
-          method: "get_selections",
-          id: user?.id,
+          method: "leave_session",
         }),
       });
+      // setCurrentVote(null);
+      setRoundResult(null);
     }
-  }
+  }, [game]);
+
+  useEffect(() => {
+    if (!game?.id) return;
+    const interval = setInterval(() => {
+      getSelections();
+    }, 1500);
+
+    return () => clearInterval(interval);
+  }, [game?.id]);
 
   const api = useMemo(() => {
     return {
       game,
       currentVote,
-      setVote,
       isGameActionDisabled,
+      roundResult,
+      setVote,
       startNewGame,
       leaveGame,
       joinGame,
     };
-  }, [game, currentVote, isGameActionDisabled]);
-
-  useEffect(() => {
-    fetch("/rpc", {
-      method: "POST",
-
-      body: JSON.stringify({
-        jsonrpc: "2.0",
-        method: "leave_session",
-        id: user?.id,
-      }),
-    });
-  }, []);
+  }, [game, currentVote, isGameActionDisabled, roundResult]);
 
   return (
     <SessionContext.Provider value={api}>{children}</SessionContext.Provider>
