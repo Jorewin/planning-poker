@@ -40,13 +40,11 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       const response = await fetch("/rpc", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
         body: JSON.stringify({
           jsonrpc: "2.0",
           method: "login",
           params: [username, password],
+          id: 1,
         }),
       }).then((res) => res.json());
 
@@ -65,13 +63,11 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       const response = await fetch("/rpc", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
         body: JSON.stringify({
           jsonrpc: "2.0",
           method: "register",
           params: [username, password],
+          
         }),
       }).then((res) => res.json());
 
