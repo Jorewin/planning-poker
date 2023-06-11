@@ -1,5 +1,5 @@
 from functools import wraps
-from typing import Callable, Concatenate, Literal, ParamSpec, TypeVar
+from typing import Callable, Concatenate, ParamSpec, TypeVar
 
 from django.http import HttpRequest
 from django.contrib.auth.models import User
