@@ -1,8 +1,9 @@
-import React, { createContext, useContext, useMemo, useState } from "react";
+import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { User } from "../types";
-
+import { v4 as uuidv4 } from "uuid";
 interface UserContextProps {
   user: User | null;
+  clientId: string;
   setUser: (user: User | null) => void;
   renameUser: (username: string) => void;
   loginUser: (username: string, password: string) => Promise<void>;
@@ -11,6 +12,7 @@ interface UserContextProps {
 
 export const UserContext = createContext<UserContextProps>({
   user: null,
+  clientId: "",
   setUser: () => {},
   renameUser: () => {},
   loginUser: async () => {},
@@ -21,6 +23,7 @@ export const useUserContext = () => useContext(UserContext);
 
 export const UserProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [clientId, setClientId] = useState<string>("");
 
   function renameUser(username: string) {
     if (username.length < 3)
@@ -84,12 +87,18 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
   const api = useMemo(() => {
     return {
       user,
+      clientId,
       setUser,
       renameUser,
       loginUser,
       registerUser,
     };
   }, [user]);
+
+  useEffect(() => {
+    setClientId(uuidv4());
+  }, []);
+    
 
   return <UserContext.Provider value={api}>{children}</UserContext.Provider>;
 };

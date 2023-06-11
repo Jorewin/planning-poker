@@ -50,7 +50,7 @@ export const SessionProvider: React.FC = ({ children }) => {
   const [currentVote, setCurrentVote] = useState<Vote | null>(null);
   const [roundResult, setRoundResult] = useState<GameRoundResult | null>(null);
   const [players, setPlayers] = useState<Player[]>([]);
-  const { user } = useUserContext();
+  const { user,clientId } = useUserContext();
 
   const isGameActionDisabled = !game?.id || !user || currentVote?.cardValue;
   
@@ -64,7 +64,7 @@ export const SessionProvider: React.FC = ({ children }) => {
           jsonrpc: "2.0",
           method: "make_selection",
           params: [cardValue],
-          id: user?.id,
+          id: clientId
         }),
       }).then((res) => res.json());
 
@@ -78,7 +78,7 @@ export const SessionProvider: React.FC = ({ children }) => {
         body: JSON.stringify({
           jsonrpc: "2.0",
           method: "reset_selection",
-          id: user?.id,
+          id: clientId
         }),
       });
 
@@ -96,7 +96,7 @@ export const SessionProvider: React.FC = ({ children }) => {
       body: JSON.stringify({
         jsonrpc: "2.0",
         method: "create_session",
-        id: user?.id,
+        id: clientId
       }),
     }).then((res) => res.json());
 
@@ -140,7 +140,7 @@ export const SessionProvider: React.FC = ({ children }) => {
         jsonrpc: "2.0",
         method: "join_session",
         params: [Number(gameId)],
-        id: user?.id,
+        id: clientId
       }),
     }).then((res) => res.json());
 
@@ -162,7 +162,7 @@ export const SessionProvider: React.FC = ({ children }) => {
       body: JSON.stringify({
         jsonrpc: "2.0",
         method: "get_selections",
-        id: user?.id,
+        id: clientId
       }),
     }).then((res) => res.json());
 
@@ -188,7 +188,7 @@ export const SessionProvider: React.FC = ({ children }) => {
       //   body: JSON.stringify({
       //     jsonrpc: "2.0",
       //     method: "reset_selection",
-      //     id: user?.id,
+      //     id: clientId
       //   }),
       // });
 
