@@ -12,7 +12,6 @@ import { CardValues } from "../types";
 import Cards from "../components/Cards";
 import GameActions from "../components/GameActions";
 import GameDetails from "../components/GameDetails";
-import Rounds from "../components/Rounds";
 
 const Game = () => {
 
@@ -25,7 +24,6 @@ const Game = () => {
         <Rename />
         <GameActions />
         <GameDetails />
-        <Rounds />
       </div>
     </div>
   );

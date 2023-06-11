@@ -1,7 +1,5 @@
 import { useMemo, useState } from "react";
 import { useSessionContext } from "../contexts/SessionContext";
-import { CardValues, GameStatus, GameStatusMessage } from "../types";
-import Card from "./Card";
 
 function JoinGame() {
   const { joinGame, startNewGame } = useSessionContext();
@@ -43,7 +41,7 @@ const GameActions = () => {
   const { isGameActionDisabled } = useSessionContext();
 
   const canLeaveGame = !!game;
-  const canClearVote = !isGameActionDisabled && currentVote?.cardValue;
+  const canClearVote = currentVote?.cardValue;
 
   return (
     <div className="flex flex-col border-4 rounded-lg p-4 gap-2">
