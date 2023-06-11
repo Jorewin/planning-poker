@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { CardValue, GameStatus, Vote } from "../types";
+import { CardValue } from "../types";
 import { useSessionContext } from "../contexts/SessionContext";
 type CardProps = {
   cardValue: CardValue;
