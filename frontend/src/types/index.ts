@@ -15,7 +15,6 @@ export const CardValues: CardValue[] = [
 ];
 
 export type User = {
-  id: string;
   username: string;
 };
 
