@@ -1,14 +1,5 @@
-// import React, { useState } from "react";
-// import Header from "../components/Header";
-// import Login from "./Login";
-// import Cards from "../components/Cards";
-// import Timer from "../components/Timer";
-// import Results from "../components/Results";
-import { useUserContext } from "../contexts/UserContext";
-import { useSessionContext } from "../contexts/SessionContext";
-import Rename from "../components/Rename";
-import Card from "../components/Card";
-import { CardValues } from "../types";
+
+import UserActions from "../components/UserActions";
 import Cards from "../components/Cards";
 import GameActions from "../components/GameActions";
 import GameDetails from "../components/GameDetails";
@@ -21,7 +12,7 @@ const Game = () => {
         <Cards />
       </div>
       <div className={`w-1/5 flex flex-col gap-4`}>
-        <Rename />
+        <UserActions />
         <GameActions />
         <GameDetails />
       </div>
