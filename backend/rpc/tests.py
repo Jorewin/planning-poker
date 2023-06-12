@@ -1,10 +1,11 @@
 from copy import deepcopy
 from functools import wraps
-from typing import Any
 
 from django.test import LiveServerTestCase
 
 from xmlrpc.client import Fault, Transport, ServerProxy, INTERNAL_ERROR
+
+from rpc.types import PlayerSelectionDTO
 
 
 class CookiesTransport(Transport):
@@ -47,17 +48,65 @@ class RPCTestCase(LiveServerTestCase):
     def tearDown(self) -> None:
         del self.clients
 
-    def assumeIsNone(self, obj: object, msg: str = ""):
-        if obj is not None:
-            self.skipTest(msg)
+    def test_user_was_created(self):
+        # when
+        self.clients[1].register("username", "")
 
-    def assumeIsInstance(self, obj: object, cls: type | tuple[type | tuple[Any, ...], ...], msg: str = ""):
-        if not isinstance(obj, cls):
-            self.skipTest(msg)
+    def test_user_was_not_created_already_logged_in(self):
+        # given
+        username = "username"
+        self.clients[1].register(username, "")
+
+        # when
+        with self.assertRaises(Fault) as cm:
+            self.clients[1].register(username, "")
+
+        # then
+        self.assertEqual(cm.exception.faultCode, INTERNAL_ERROR)
+
+    def test_user_was_not_created_with_the_same_username(self):
+        # given
+        username = "username"
+        self.clients[1].register(username, "")
+
+        # when
+        with self.assertRaises(Fault) as cm:
+            self.clients[2].register(username, "")
+
+        # then
+        self.assertEqual(cm.exception.faultCode, INTERNAL_ERROR)
+
+    def test_user_was_logged_in(self):
+        # given
+        username = "username"
+        self.clients[1].register(username, "")
+        self.clients[1].logout()
+
+        # when
+        self.clients[1].login(username, "")
+
+    def test_user_was_not_logged_in_already_logged_in(self):
+        # given
+        username = "username"
+        self.clients[1].register(username, "")
+
+        # when
+        with self.assertRaises(Fault) as cm:
+            self.clients[1].login(username, "")
+
+        # then
+        self.assertEqual(cm.exception.faultCode, INTERNAL_ERROR)
+
+    def test_user_was_logged_out(self):
+        # given
+        self.clients[1].register("username", "")
+
+        # when
+        self.clients[1].logout()
 
     def test_session_was_created(self):
         # given
-        self.assumeIsNone(self.clients[1].get_session())
+        self.clients[1].register("username", "")
 
         # when
         session_id = self.clients[1].create_session()
@@ -65,238 +114,299 @@ class RPCTestCase(LiveServerTestCase):
         # then
         self.assertIsInstance(session_id, int)
 
-    def test_auto_joined_created_session(self):
+    def test_auto_joined_returned_session(self):
         # given
-        created_session_id = self.clients[1].create_session()
-        self.assumeIsInstance(created_session_id, int)
+        username = "username"
+        player_session_dto: PlayerSelectionDTO = {"username": username}
 
-        # when
-        returned_session_id = self.clients[1].get_session()
+        self.clients[1].register(username, "")
+        returned_session_id: int = self.clients[1].create_session()
+        returned_player_selection_dtos: list[PlayerSelectionDTO] = self.clients[1].get_selections(returned_session_id)
 
         # then
-        self.assertEqual(created_session_id, returned_session_id)
+        self.assertIsInstance(returned_player_selection_dtos, list)
+        self.assertIn(player_session_dto, returned_player_selection_dtos)
 
-    def test_cant_create_session_when_in_session(self):
+    def test_user_is_owner_of_returned_session(self):
         # given
-        self.clients[1].create_session()
-        self.assumeIsInstance(self.clients[1].get_session(), int)
+        username = "username"
 
-        # when
-        with self.assertRaises(Fault) as cm:
-            self.clients[1].create_session()
+        self.clients[1].register(username, "")
+        returned_session_id = self.clients[1].create_session()
+        returned_session_dto = self.clients[1].get_session(returned_session_id)
 
         # then
-        self.assertEqual(cm.exception.faultCode, INTERNAL_ERROR)
-        self.assertEqual(cm.exception.faultString, "Internal error: ")
+        self.assertIsInstance(returned_session_dto, dict)
+        self.assertIsInstance(returned_session_dto.get("user_is_owner"), bool)
+        self.assertTrue(returned_session_dto.get("user_is_owner"))
 
     def test_session_was_joined(self):
         # given
-        created_session_id = self.clients[1].create_session()
-        self.assumeIsInstance(created_session_id, int)
-        self.assumeIsNone(self.clients[2].get_session())
+        first_username = "first_username"
+        second_username = "second_username"
+        second_player_selection_dto: PlayerSelectionDTO = {"username": second_username}
 
-        # when
-        self.clients[2].join_session(created_session_id)
-
-        # then
-        returned_session_id = self.clients[2].get_session()
-        self.assertEqual(created_session_id, returned_session_id)
-
-    def test_cant_join_session_when_in_session(self):
-        # given
-        session_id = self.clients[1].create_session()
-        self.clients[2].create_session()
-        self.assumeIsInstance(session_id, int)
-        self.assumeIsInstance(self.clients[2].get_session(), int)
-
-        # when
-        with self.assertRaises(Fault) as cm:
-            self.clients[2].join_session(session_id)
+        self.clients[1].register(first_username, "")
+        self.clients[2].register(second_username, "")
+        returned_session_id: int = self.clients[1].create_session()
+        self.clients[2].join_session(returned_session_id)
+        returned_player_selection_dtos: list[PlayerSelectionDTO] = self.clients[2].get_selections(returned_session_id)
 
         # then
-        self.assertEqual(cm.exception.faultCode, INTERNAL_ERROR)
-        self.assertEqual(cm.exception.faultString, "Internal error: ")
+        self.assertIn(second_player_selection_dto, returned_player_selection_dtos)
 
     def test_session_was_left(self):
         # given
-        self.clients[1].create_session()
-        self.assumeIsInstance(self.clients[1].get_session(), int)
+        first_username = "first_username"
+        second_username = "second_username"
+        second_player_selection_dto: PlayerSelectionDTO = {"username": second_username}
+
+        self.clients[1].register(first_username, "")
+        self.clients[2].register(second_username, "")
+        returned_session_id: int = self.clients[1].create_session()
+        self.clients[2].join_session(returned_session_id)
 
         # when
-        self.clients[1].leave_session()
+        self.clients[2].leave_session(returned_session_id)
 
         # then
-        returned_session_id = self.clients[1].get_session()
-        self.assertIsNone(returned_session_id)
+        returned_player_selection_dtos: list[PlayerSelectionDTO] = self.clients[1].get_selections(returned_session_id)
+        self.assertNotIn(second_player_selection_dto, returned_player_selection_dtos)
 
-    def test_selection_was_reset_after_session_was_left(self):
+    def test_session_was_deleted_after_owner_left(self):
         # given
-        selection = 1
-        self.clients[1].create_session()
-        self.clients[1].make_selection(selection)
-        self.assumeIsInstance(self.clients[1].get_session(), int)
-        self.assumeIsInstance(self.clients[1].get_selection(), int)
+        username = "username"
+
+        self.clients[1].register(username, "")
+        returned_session_id: int = self.clients[1].create_session()
 
         # when
-        self.clients[1].leave_session()
-
-        # then
-        self.clients[1].create_session()
-        returned_selection = self.clients[1].get_selection()
-        self.assertIsNone(returned_selection)
-
-    def test_cant_leave_session_when_not_in_session(self):
-        # given
-        self.assumeIsNone(self.clients[1].get_session())
-
-        # when
+        self.clients[1].leave_session(returned_session_id)
         with self.assertRaises(Fault) as cm:
-            self.clients[1].leave_session()
+            self.clients[1].get_session(returned_session_id)
 
         # then
         self.assertEqual(cm.exception.faultCode, INTERNAL_ERROR)
-        self.assertEqual(cm.exception.faultString, "Internal error: ")
 
     def test_selection_was_made(self):
         # given
         selection = 1
-        self.clients[1].create_session()
-        self.assumeIsInstance(self.clients[1].get_session(), int)
+        username = "username"
+
+        self.clients[1].register(username, "")
+        returned_session_id: int = self.clients[1].create_session()
 
         # when
-        self.clients[1].make_selection(selection)
+        self.clients[1].make_selection(returned_session_id, selection)
 
         # then
-        returned_selection = self.clients[1].get_selection()
+        returned_selection = self.clients[1].get_selection(returned_session_id)
         self.assertEqual(selection, returned_selection)
 
     def test_cant_make_selection_when_not_in_session(self):
         # given
         selection = 1
-        self.assumeIsNone(self.clients[1].get_session())
+        first_username = "first_username"
+        second_username = "second_username"
+
+        self.clients[1].register(first_username, "")
+        self.clients[2].register(second_username, "")
+        returned_session_id: int = self.clients[1].create_session()
 
         # when
         with self.assertRaises(Fault) as cm:
-            self.clients[1].make_selection(selection)
+            self.clients[2].make_selection(returned_session_id, selection)
 
         # then
         self.assertEqual(cm.exception.faultCode, INTERNAL_ERROR)
-        self.assertEqual(cm.exception.faultString, "Internal error: ")
+
+    def test_cant_make_selection_when_selection_was_made(self):
+        # given
+        selection = 1
+        username = "username"
+
+        self.clients[1].register(username, "")
+        returned_session_id: int = self.clients[1].create_session()
+        self.clients[1].make_selection(returned_session_id, selection)
+
+        # when
+        with self.assertRaises(Fault) as cm:
+            self.clients[1].make_selection(returned_session_id, selection)
+
+        # then
+        self.assertEqual(cm.exception.faultCode, INTERNAL_ERROR)
 
     def test_selection_was_reset(self):
         # given
-        selection = 1
-        self.clients[1].create_session()
-        self.clients[1].make_selection(selection)
-        self.assumeIsInstance(self.clients[1].get_session(), int)
-        self.assumeIsInstance(self.clients[1].get_selection(), int)
+        username = "username"
+        selection = 5
+
+        self.clients[1].register(username, "")
+        returned_session_id: int = self.clients[1].create_session()
+        self.clients[1].make_selection(returned_session_id, selection)
 
         # when
-        self.clients[1].reset_selection()
+        returned_selection = self.clients[1].reset_selection(returned_session_id)
 
         # then
-        returned_selection = self.clients[1].get_selection()
-        self.assertIsNone(returned_selection)
+        self.assertEqual(returned_selection, None)
 
     def test_cant_reset_selection_when_not_in_session(self):
         # given
-        self.assumeIsNone(self.clients[1].get_session())
+        first_username = "first_username"
+        second_username = "second_username"
+
+        self.clients[1].register(first_username, "")
+        self.clients[2].register(second_username, "")
+        returned_session_id: int = self.clients[1].create_session()
 
         # when
         with self.assertRaises(Fault) as cm:
-            self.clients[1].reset_selection()
+            self.clients[2].reset_selection(returned_session_id)
 
         # then
         self.assertEqual(cm.exception.faultCode, INTERNAL_ERROR)
-        self.assertEqual(cm.exception.faultString, "Internal error: ")
 
     def test_cant_reset_selection_when_no_selection(self):
         # given
-        self.clients[1].create_session()
-        self.assumeIsNone(self.clients[1].get_selection())
+        username = "username"
+
+        self.clients[1].register(username, "")
+        returned_session_id: int = self.clients[1].create_session()
 
         # when
         with self.assertRaises(Fault) as cm:
-            self.clients[1].reset_selection()
+            self.clients[1].reset_selection(returned_session_id)
 
         # then
         self.assertEqual(cm.exception.faultCode, INTERNAL_ERROR)
-        self.assertEqual(cm.exception.faultString, "Internal error: ")
 
     def test_get_selections_with_one_player(self):
         # given
         selection = 1
+        username = "username"
+        player_selection_dtos: list[PlayerSelectionDTO] = [{"username": username, "selection": selection}]
 
-        self.clients[1].create_session()
-        self.clients[1].make_selection(1)
-        self.assumeIsInstance(self.clients[1].get_session(), int)
-        self.assumeIsInstance(self.clients[1].get_selection(), int)
+        self.clients[1].register(username, "")
+        returned_session_id: int = self.clients[1].create_session()
+        self.clients[1].make_selection(returned_session_id, selection)
 
         # when
-        returned_player_selections = self.clients[1].get_selections()
+        returned_player_selection_dtos: list[PlayerSelectionDTO] = self.clients[1].get_selections(returned_session_id)
 
         # then
-        self.assertIsInstance(returned_player_selections, list)
-        self.assertEqual([selection], [x.get("selection") for x in returned_player_selections])
+        self.assertEqual(player_selection_dtos, returned_player_selection_dtos)
+
+    def test_returned_selections_after_force_selection(self):
+        # given
+        selection = 1
+        username = "username"
+        player_selection_dtos: list[PlayerSelectionDTO] = [{"username": username, "selection": None}]
+
+        self.clients[1].register(username, "")
+        returned_session_id: int = self.clients[1].create_session()
+        self.clients[1].force_selections(returned_session_id)
+
+        # when
+        returned_player_selection_dtos: list[PlayerSelectionDTO] = self.clients[1].get_selections(returned_session_id)
+
+        # then
+        self.assertEqual(player_selection_dtos, returned_player_selection_dtos)
 
     def test_get_selections_with_two_players(self):
         # given
-        selections = [1, 2]
-        session_id = self.clients[1].create_session()
-        self.clients[2].join_session(session_id)
-        self.clients[1].make_selection(selections[0])
-        self.clients[2].make_selection(selections[1])
-        self.assumeIsInstance(self.clients[1].get_session(), int)
-        self.assumeIsInstance(self.clients[1].get_selection(), int)
-        self.assumeIsInstance(self.clients[2].get_selection(), int)
+        first_selection = 1
+        second_selection = 2
+        first_username = "first_username"
+        second_username = "second_username"
+        player_selection_dtos: list[PlayerSelectionDTO] = [
+            {"username": first_username, "selection": first_selection},
+            {"username": second_username, "selection": second_selection}
+        ]
+
+        self.clients[1].register(first_username, "")
+        self.clients[2].register(second_username, "")
+        returned_session_id: int = self.clients[1].create_session()
+        self.clients[2].join_session(returned_session_id)
+        self.clients[1].make_selection(returned_session_id, first_selection)
+        self.clients[2].make_selection(returned_session_id, second_selection)
 
         # when
-        returned_player_selections = self.clients[1].get_selections()
+        returned_player_selection_dtos: list[PlayerSelectionDTO] = \
+            sorted(self.clients[1].get_selections(returned_session_id), key=lambda key: key.get("selection"))
 
         # then
-        self.assertIsInstance(returned_player_selections, list)
-        self.assertEqual(selections, sorted(x.get("selection") for x in returned_player_selections))
+        self.assertEqual(player_selection_dtos, returned_player_selection_dtos)
 
     def test_returned_selections_are_the_same(self):
         # given
-        selections = [1, 2]
-        session_id = self.clients[1].create_session()
-        self.clients[2].join_session(session_id)
-        self.clients[1].make_selection(selections[0])
-        self.clients[2].make_selection(selections[1])
-        self.assumeIsInstance(self.clients[1].get_session(), int)
-        self.assumeIsInstance(self.clients[2].get_session(), int)
-        self.assumeIsInstance(self.clients[1].get_selection(), int)
-        self.assumeIsInstance(self.clients[2].get_selection(), int)
+        first_selection = 1
+        second_selection = 2
+        first_username = "first_username"
+        second_username = "second_username"
+
+        self.clients[1].register(first_username, "")
+        self.clients[2].register(second_username, "")
+        returned_session_id: int = self.clients[1].create_session()
+        self.clients[2].join_session(returned_session_id)
+        self.clients[1].make_selection(returned_session_id, first_selection)
+        self.clients[2].make_selection(returned_session_id, second_selection)
 
         # when
-        returned_player_selections_1 = self.clients[1].get_selections()
-        returned_player_selections_2 = self.clients[1].get_selections()
+        first_returned_player_selection_dtos: list[PlayerSelectionDTO] = \
+            self.clients[1].get_selections(returned_session_id)
+
+        second_returned_player_selection_dtos: list[PlayerSelectionDTO] = \
+            self.clients[2].get_selections(returned_session_id)
 
         # then
-        self.assertEqual(returned_player_selections_1, returned_player_selections_2)
+        self.assertEqual(first_returned_player_selection_dtos, second_returned_player_selection_dtos)
 
     def test_returned_selections_are_empty_when_no_selection(self):
         # given
-        self.clients[1].create_session()
-        self.assumeIsInstance(self.clients[1].get_session(), int)
-        self.assumeIsNone(self.clients[1].get_selection())
+        selection = 1
+        username = "username"
+
+        self.clients[1].register(username, "")
+        returned_session_id: int = self.clients[1].create_session()
 
         # when
-        returned_player_selections = self.clients[1].get_selections()
+        returned_player_selection_dtos: list[PlayerSelectionDTO] = self.clients[1].get_selections(returned_session_id)
 
         # then
-        for player_selection in returned_player_selections:
-            self.assumeIsNone(player_selection.get("selection"))
+        for dto in returned_player_selection_dtos:
+            self.assertIsNone(dto.get("selection"))
+
 
     def test_cant_get_selections_when_not_in_session(self):
         # given
-        self.assumeIsNone(self.clients[1].get_session())
+        first_username = "first_username"
+        second_username = "second_username"
+
+        self.clients[1].register(first_username, "")
+        self.clients[2].register(second_username, "")
+        returned_session_id: int = self.clients[1].create_session()
 
         # when
         with self.assertRaises(Fault) as cm:
-            self.clients[1].get_selections()
+            self.clients[2].get_selections(returned_session_id)
 
         # then
         self.assertEqual(cm.exception.faultCode, INTERNAL_ERROR)
-        self.assertEqual(cm.exception.faultString, "Internal error: ")
+
+    def test_cant_force_selections_when_not_an_owner(self):
+        # given
+        first_username = "first_username"
+        second_username = "second_username"
+
+        self.clients[1].register(first_username, "")
+        self.clients[2].register(second_username, "")
+        returned_session_id: int = self.clients[1].create_session()
+        self.clients[2].join_session(returned_session_id)
+
+        # when
+        with self.assertRaises(Fault) as cm:
+            self.clients[2].force_selections(returned_session_id)
+
+        # then
+        self.assertEqual(cm.exception.faultCode, INTERNAL_ERROR)
