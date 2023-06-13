@@ -13,7 +13,6 @@ interface UserContextProps {
   user: User | null;
   clientId?: string;
   setUser: (user: User | null) => void;
-  renameUser: (username: string) => void;
   loginUser: (username: string, password: string) => Promise<void>;
   registerUser: (username: string, password: string) => Promise<void>;
   logoutUser: () => Promise<void>;
@@ -23,7 +22,6 @@ export const UserContext = createContext<UserContextProps>({
   user: null,
   clientId: "",
   setUser: () => {},
-  renameUser: () => {},
   loginUser: async () => {},
   registerUser: async () => {},
   logoutUser: async () => {},
@@ -34,22 +32,6 @@ export const useUserContext = () => useContext(UserContext);
 export const UserProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [clientId] = useState<string>(uuidv4());
-
-  function renameUser(username: string) {
-    if (username.length < 3)
-      return alert("Username must be at least 3 characters long.");
-    else if (username.length > 15)
-      return alert("Username must be at most 15 characters long.");
-
-    setUser((user) => {
-      if (user) {
-        return { ...user, username };
-      }
-      return null;
-    });
-
-    Cookies.set("username", username);
-  }
 
   const loginUser = async (username: string, password: string) => {
     try {
@@ -150,7 +132,6 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
       user,
       clientId,
       setUser,
-      renameUser,
       loginUser,
       registerUser,
       logoutUser,
