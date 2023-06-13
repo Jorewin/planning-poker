@@ -19,6 +19,9 @@ class Session(models.Model):
 
 
 class Player(models.Model):
+    class Meta:
+        unique_together = [["user", "session"]]
+
     user = models.ForeignKey(User, models.CASCADE)
     session = models.ForeignKey(Session, models.CASCADE)
     selection = models.SmallIntegerField(null=True)
