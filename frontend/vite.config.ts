@@ -13,7 +13,7 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/rpc': {
-        target: 'http://backend:8000',
+        target: 'http://4.231.145.85:8000',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/rpc/, ''),
         headers:{
