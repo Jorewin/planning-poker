@@ -2,7 +2,7 @@ import { useContext, useState } from "react";
 import { UserContext } from "../contexts/UserContext";
 
 const Rename = () => {
-  const { user, setUser, renameUser } = useContext(UserContext);
+  const { user, logoutUser, renameUser } = useContext(UserContext);
   const [usernameInput, setUsernameInput] = useState(user!.username);
 
   function handleInputChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -23,12 +23,8 @@ const Rename = () => {
         value={usernameInput}
         onChange={handleInputChange}
       />
-      <button
-        className="border rounded-lg px-2 py-1 bg-green-500 text-white disabled:opacity-50 disabled:cursor-not-allowed"
-        onClick={handleSubmit}
-        disabled={isDisabled}
-      >
-        Rename
+      <button className="border rounded-lg px-2 py-1 bg-red-500 text-white" onClick={logoutUser}>
+        Logout
       </button>
     </div>
   );
