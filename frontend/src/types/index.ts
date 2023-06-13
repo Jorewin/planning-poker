@@ -15,12 +15,12 @@ export const CardValues: CardValue[] = [
 ];
 
 export type User = {
-  id: string;
   username: string;
+  csrftoken: string;
 };
 
 export type Vote = {
-  userId: string;
+  username: string;
   cardValue: CardValue;
 };
 
@@ -32,7 +32,6 @@ export type GameRoundResult = {
 export type Game = {
   id: string;
   name: string;
-  users: User[];
   code: string;
 };
 

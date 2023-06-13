@@ -1,4 +1,5 @@
 from django.db import models
+from django.contrib.auth.models import User
 
 
 class Session(models.Model):
@@ -12,10 +13,13 @@ class Session(models.Model):
                                    check=models.Q(players_number__gte=0))
         ]
 
+    owner = models.ForeignKey(User, models.CASCADE)
     players_number = models.IntegerField()
     ready_players_number = models.IntegerField()
 
 
 class Player(models.Model):
-    session = models.ForeignKey(Session, models.SET_NULL, null=True)
+    user = models.ForeignKey(User, models.CASCADE)
+    session = models.ForeignKey(Session, models.CASCADE)
     selection = models.SmallIntegerField(null=True)
+    voted = models.BooleanField(default=False)
