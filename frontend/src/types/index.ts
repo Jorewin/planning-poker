@@ -37,5 +37,5 @@ export type Player = {
   id: string;
   username: string;
   hasVoted: boolean;
-  cardValue?: CardValue;
+  selection?: CardValue;
 };

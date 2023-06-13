@@ -170,6 +170,14 @@ export const SessionProvider = ({
           isOwner: false,
         });
 
+        setSessions([
+          ...sessions,
+          {
+            id: gameId,
+            isOwner: false,
+          },
+        ]);
+
         const selectionResponse = await getSelections();
       }
     }
@@ -190,6 +198,8 @@ export const SessionProvider = ({
 
     const selections = res.result;
     const { players } = selections;
+
+    setPlayers(players);
 
     if (players.every((s: any) => s.selection)) {
       const sum = players.reduce((acc: number, s: any) => acc + s.selection, 0);
@@ -225,8 +235,8 @@ export const SessionProvider = ({
   };
 
   const activateGame = async (id: string) => {
-    if(!user) return;
-    
+    if (!user) return;
+
     const res = await fetch("/rpc", {
       method: "POST",
       body: JSON.stringify({
@@ -249,7 +259,7 @@ export const SessionProvider = ({
         cardValue: res.result.players.find(
           (p: any) => p.username == user?.username
         ).selection,
-        username: user.username
+        username: user.username,
       });
     }
 
@@ -277,6 +287,7 @@ export const SessionProvider = ({
       isGameActionDisabled,
       roundResult,
       sessions,
+      players,
       activateGame,
       setVote,
       startNewGame,
@@ -284,7 +295,7 @@ export const SessionProvider = ({
       joinGame,
     };
   }, [
-    game,
+    game?.id,
     currentVote,
     isGameActionDisabled,
     roundResult,
@@ -294,6 +305,7 @@ export const SessionProvider = ({
     startNewGame,
     leaveGame,
     joinGame,
+    players,
   ]);
 
   useEffect(() => {
