@@ -23,3 +23,15 @@ class Player(models.Model):
     session = models.ForeignKey(Session, models.CASCADE)
     selection = models.SmallIntegerField(null=True)
     voted = models.BooleanField(default=False)
+
+
+class Story(models.Model):
+    session = models.ForeignKey(Session, models.CASCADE)
+    summary = models.TextField()
+    description = models.TextField()
+
+
+class Task(models.Model):
+    story = models.ForeignKey(Story, models.CASCADE)
+    summary = models.TextField()
+    estimation = models.SmallIntegerField(null=True)

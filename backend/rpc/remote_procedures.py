@@ -6,8 +6,8 @@ from django.contrib.auth.models import User
 from django.contrib.auth import authenticate as django_authenticate, login as django_login, logout as django_logout
 
 from modernrpc.core import rpc_method, REQUEST_KEY
-from .models import Player, Session
-from .types import PlayerSelectionDTO, SessionDTO
+from .models import Player, Session, Story, Task
+from .types import SessionDTO, SessionDetailsDTO, PlayerDTO, StoryDTO
 
 P = ParamSpec('P')
 R = TypeVar('R')
@@ -99,16 +99,35 @@ def create_session(**kwargs) -> int:
 
 @rpc_method
 @authenticated_user_only
-def get_session(session_id: int, **kwargs) -> SessionDTO:
+def get_session(session_id: int, **kwargs) -> SessionDetailsDTO:
     """Returns info about the chosen session if users is registered as a player.
 
-    :param session_id: identifier of the session the player want to operate on
-    :return: session info object
+    :param session_id: identifier of the session to operate on
+    :return: session details
     :raise Any: any error that occurs inside
     """
     user: User = kwargs[REQUEST_KEY].user
-    session = Player.objects.get(user=user, session=session_id).session
-    return {"id": session.id, "user_is_owner": session.owner == user}
+    player = Player.objects.get(user=user, session=session_id)
+    session = player.session
+
+    players = session.player_set.all()
+
+    player_dtos: list[PlayerDTO] = \
+        [{"username": player.user.username} for player in players] \
+        if session.ready_players_number != session.players_number \
+        else [{"username": player.user.username, "selection": player.selection} for player in players]
+
+    stories = session.story_set.all()
+
+    story_dtos: list[StoryDTO] = [{
+        "id": story.id,
+        "summary": story.summary,
+        "description": story.description,
+        "tasks": [{"id": task.id, "summary": task.summary, "estimation": task.estimation} for task in
+                  story.task_set.all()]
+    } for story in stories]
+
+    return {"id": session.id, "user_is_owner": session.owner == user, "players": player_dtos, "stories": story_dtos}
 
 
 @rpc_method
@@ -254,20 +273,103 @@ def reset_selection(session_id: int, **kwargs):
 
 @rpc_method
 @authenticated_user_only
-def get_selections(session_id: int, **kwargs) -> list[PlayerSelectionDTO]:
-    """Returns the list of players in a chosen session and their selections if every player is ready.
+def create_story(session_id: int, summary: str, description: str | None, **kwargs) -> int:
+    """Creates a story in a chosen session.
 
     :param session_id: identifies the session to operate on
-    :return: list of player names and optionally selections
+    :param summary: story's summary
+    :param description: story's description
     :raise Any: any error that occurs inside
     """
     user: User = kwargs[REQUEST_KEY].user
     player = Player.objects.get(user=user, session=session_id)
     session = player.session
 
-    players = session.player_set.all()
+    return Story.objects.create(session=session, summary=summary, description=description).id
 
-    if session.ready_players_number != session.players_number:
-        return [{"username": x.user.username} for x in players]
 
-    return [{"username": x.user.username, "selection": x.selection} for x in players]
+@rpc_method
+@authenticated_user_only
+def update_story(story_id: int, summary: str, description: str | None, **kwargs):
+    """Updates a chosen story.
+
+    :param story_id: identifies the story to update
+    :param summary: story's summary
+    :param description: story's description
+    :raise Any: any error that occurs inside
+    """
+    user: User = kwargs[REQUEST_KEY].user
+    story = Story.objects.get(id=story_id)
+    Player.objects.get(user=user, session=story.session_id)
+
+    story.summary = summary
+    story.description = description
+    story.save()
+
+
+@rpc_method
+@authenticated_user_only
+def delete_story(story_id: int, **kwargs):
+    """Deletes a chosen story.
+
+    :param story_id: identifies the story to delete
+    :raise Any: any error that occurs inside
+    """
+    user: User = kwargs[REQUEST_KEY].user
+    story = Story.objects.get(id=story_id)
+    Player.objects.get(user=user, session=story.session_id)
+
+    story.delete()
+
+
+@rpc_method
+@authenticated_user_only
+def create_task(story_id: int, summary: str, estimation: int | None, **kwargs):
+    """Creates a task in a chosen story.
+
+    :param story_id: identifies the story to operate on
+    :param summary: task's summary
+    :param estimation: task's description
+    :raise Any: any error that occurs inside
+    """
+    user: User = kwargs[REQUEST_KEY].user
+    story = Story.objects.get(id=story_id)
+    Player.objects.get(user=user, session=story.session_id)
+
+    return Task.objects.create(story=story, summary=summary, estimation=estimation).id
+
+
+@rpc_method
+@authenticated_user_only
+def update_task(task_id: int, summary: str, estimation: int | None, **kwargs):
+    """Updates a chosen task.
+
+    :param task_id: identifies the task to update
+    :param summary: task's summary
+    :param estimation: task's description
+    :raise Any: any error that occurs inside
+    """
+    user: User = kwargs[REQUEST_KEY].user
+    task = Task.objects.get(id=task_id)
+    story = task.story
+    Player.objects.get(user=user, session=story.session_id)
+
+    task.summary = summary
+    task.estimation = estimation
+    task.save()
+
+
+@rpc_method
+@authenticated_user_only
+def delete_task(task_id: int, **kwargs):
+    """Deletes a chosen task.
+
+    :param task_id: identifies the task to update
+    :raise Any: any error that occurs inside
+    """
+    user: User = kwargs[REQUEST_KEY].user
+    task = Task.objects.get(id=task_id)
+    story = task.story
+    Player.objects.get(user=user, session=story.session_id)
+
+    task.delete()
