@@ -5,7 +5,7 @@ from django.test import LiveServerTestCase
 
 from xmlrpc.client import Fault, Transport, ServerProxy, INTERNAL_ERROR
 
-from rpc.types import PlayerSelectionDTO
+from .types import PlayerSelectionDTO, SessionDTO
 
 
 class CookiesTransport(Transport):
@@ -154,6 +154,27 @@ class RPCTestCase(LiveServerTestCase):
 
         # then
         self.assertIn(second_player_selection_dto, returned_player_selection_dtos)
+
+    def test_returned_sessions_match(self):
+        # given
+        first_username = "first_username"
+        second_username = "second_username"
+
+        self.clients[1].register(first_username, "")
+        self.clients[2].register(second_username, "")
+        first_returned_session_id: int = self.clients[1].create_session()
+        second_returned_session_id: int = self.clients[2].create_session()
+        self.clients[2].join_session(first_returned_session_id)
+        session_details_dtos: list[SessionDTO] = [
+            {"id": first_returned_session_id, "user_is_owner": False},
+            {"id": second_returned_session_id, "user_is_owner": True}
+        ]
+
+        # when
+        returned_session_dtos: list[SessionDTO] = sorted(self.clients[2].get_sessions(), key=lambda key: key.get("id"))
+
+        # then
+        self.assertEqual(session_details_dtos, returned_session_dtos)
 
     def test_session_was_left(self):
         # given
