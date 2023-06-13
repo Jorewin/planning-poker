@@ -10,8 +10,7 @@ export const CardValues: CardValue[] = [
   34,
   55,
   89,
-  144,
-  "?"
+  144
 ];
 
 export type User = {
