@@ -32,12 +32,8 @@ function JoinGame() {
 }
 
 const GameActions = () => {
-  const {
-    game,
-    leaveGame,
-    currentVote,
-    setVote,
-  } = useSessionContext();
+  const { game, leaveGame, currentVote, setVote, forceSelection } =
+    useSessionContext();
   const { isGameActionDisabled } = useSessionContext();
 
   const canLeaveGame = !!game;
@@ -53,6 +49,14 @@ const GameActions = () => {
           onClick={() => setVote(null)}
         >
           Clear Selection
+        </button>
+      )}
+      {game?.isOwner && (
+        <button
+          className="border rounded-lg px-2 py-1 bg-green-500 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+          onClick={() => forceSelection()}
+        >
+          Force Selection
         </button>
       )}
       {canLeaveGame && (

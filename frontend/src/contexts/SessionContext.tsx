@@ -17,7 +17,6 @@ import {
   Vote,
 } from "../types";
 import { useUserContext } from "./UserContext";
-import { v4 as uuidv4 } from "uuid";
 import { getClosestFibonacci } from "../utils";
 import Cookies from "js-cookie";
 
@@ -42,6 +41,7 @@ interface SessionContextProps {
     estimate: CardValue
   ) => Promise<void>;
   deleteTask: (storyId: string, taskId: string) => Promise<void>;
+  forceSelection: () => Promise<void>;
 }
 
 export const SessionContext = createContext<SessionContextProps>({
@@ -61,6 +61,7 @@ export const SessionContext = createContext<SessionContextProps>({
   deleteStory: async () => {},
   addTask: async () => {},
   deleteTask: async () => {},
+  forceSelection: async () => {},
 });
 
 export const useSessionContext = () => useContext(SessionContext);
@@ -213,23 +214,22 @@ export const SessionProvider = ({
     if (res.error) return;
 
     const selections = res.result;
-    const { players } = selections;
+    const { players: playersResponse } = selections;
     const { stories: storiesResponse } = selections;
 
-    setPlayers(players);
+    setPlayers(playersResponse);
 
     if (JSON.stringify(stories) !== JSON.stringify(storiesResponse)) {
       setStories(storiesResponse);
     }
 
-    if (players.every((s: any) => s.selection)) {
-      const sum = players.reduce((acc: number, s: any) => acc + s.selection, 0);
+    if (playersResponse.every((s: any) => s.selection)) {
+      const sum = playersResponse.reduce((acc: number, s: any) => acc + s.selection, 0);
 
-      const average = Math.round(sum / players.length);
+      const average = Math.round(sum / playersResponse.length);
       const consensus = getClosestFibonacci(average);
 
       setRoundResult((prev) => ({
-        ...prev,
         consensus,
         average,
       }));
@@ -332,7 +332,11 @@ export const SessionProvider = ({
     setStories((prev) => prev.filter((s) => s.id != id));
   };
 
-  const addTask = async (storyId: string, summary: string, estimation: CardValue) => {
+  const addTask = async (
+    storyId: string,
+    summary: string,
+    estimation: CardValue
+  ) => {
     const res = await fetch("/rpc", {
       method: "POST",
       body: JSON.stringify({
@@ -391,6 +395,31 @@ export const SessionProvider = ({
     );
   };
 
+  const forceSelection = async () => {
+    if(!game?.isOwner) return;
+
+    const res = await fetch("/rpc", {
+      method: "POST",
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        method: "force_selections",
+        id: clientId,
+        params: [game?.id],
+      }),
+    }).then((res) => res.json());
+
+    if (res.error) return;
+  };
+
+  const resetContext = () => {
+    setGame(null);
+    setStories([]);
+    setPlayers([]);
+    setRoundResult(null);
+    setCurrentVote(null);
+    setSessions([]);
+  };
+
   useEffect(() => {
     if (!game?.id) return;
     const interval = setInterval(() => {
@@ -418,6 +447,7 @@ export const SessionProvider = ({
       deleteStory,
       addTask,
       deleteTask,
+      forceSelection,
     };
   }, [
     game?.id,
@@ -435,7 +465,7 @@ export const SessionProvider = ({
   ]);
 
   useEffect(() => {
-    const gameId = Cookies.get("gameId");
+    resetContext();
     getSessions().then((sessions) => {
       // map through sessions and add isOwner property from user_is_owner field
       sessions = sessions.map((s: any) => ({
@@ -444,12 +474,6 @@ export const SessionProvider = ({
       }));
       setSessions(sessions);
     });
-    if (gameId && user) {
-      setGame({
-        id: gameId,
-        isOwner: false,
-      });
-    }
   }, [user]);
 
   // reset game cookie when game is left
