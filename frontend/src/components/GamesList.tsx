@@ -6,12 +6,12 @@ export function GamesList() {
 
   return (
     // a list of games with tailwind
-    <div className="flex flex-col border-4 rounded-lg p-4 gap-2 max-h-80 overflow-y-auto">
+    <div className="flex flex-col border-4 rounded-lg p-2 gap-2 max-h-80 overflow-y-auto">
       <p className="text-center font-bold">Active Games</p>
       {sessions.map((game: Game) => (
         <div
           className={`flex justify-between items-center ${
-            currentGame?.id === game.id ? "bg-green-200 p-2 rounded-lg" : ""
+            currentGame?.id === game.id ? "bg-green-200 p-2 rounded-lg" : "p-2"
           }`}
           key={game.id}
         >
