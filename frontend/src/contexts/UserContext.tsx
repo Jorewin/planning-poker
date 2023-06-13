@@ -14,7 +14,7 @@ interface UserContextProps {
   clientId?: string;
   setUser: (user: User | null) => void;
   loginUser: (username: string, password: string) => Promise<void>;
-  registerUser: (username: string, password: string) => Promise<void>;
+  registerUser: (username: string, password: string, dataPolicyIsAccepted: boolean) => Promise<void>;
   logoutUser: () => Promise<void>;
 }
 
@@ -63,7 +63,12 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  const registerUser = async (username: string, password: string) => {
+  const registerUser = async (username: string, password: string, dataPolicyIsAccepted: boolean) => {
+    if (!dataPolicyIsAccepted) {
+      alert("Registration failed");
+      return;
+    }
+
     try {
       const response = await fetch("/rpc", {
         method: "POST",
