@@ -31,8 +31,7 @@ export type GameRoundResult = {
 
 export type Game = {
   id: string;
-  name: string;
-  code: string;
+  isOwner: boolean;
 };
 
 export type Player = {
