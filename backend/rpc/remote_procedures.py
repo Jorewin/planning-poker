@@ -121,8 +121,8 @@ def get_sessions(**kwargs) -> list[SessionDTO]:
     """
     user: User = kwargs[REQUEST_KEY].user
 
-    sessions = user.session_set.all()
-    return [{"id": x.id, "user_is_owner": x.owner == user} for x in sessions]
+    sessions = [player.session for player in user.player_set.all()]
+    return [{"id": session.id, "user_is_owner": session.owner == user} for session in sessions]
 
 
 @rpc_method
