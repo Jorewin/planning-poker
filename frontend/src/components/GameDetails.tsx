@@ -10,7 +10,7 @@ const GameDetails = () => {
         <span className="font-bold text-green-500">&nbsp;{game?.id}</span>
       </div>
       <div>
-        Latest consensus:
+        Closest fibonacci:
         <span className="font-bold text-green-500">
           &nbsp;{roundResult?.consensus}
         </span>
