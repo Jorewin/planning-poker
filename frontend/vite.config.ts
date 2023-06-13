@@ -13,7 +13,7 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/rpc': {
-        target: 'http://localhost:8000',
+        target: 'https://11cd-188-33-225-50.ngrok-free.app/',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/rpc/, ''),
         headers:{

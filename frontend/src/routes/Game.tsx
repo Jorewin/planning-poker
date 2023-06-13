@@ -3,6 +3,7 @@ import UserActions from "../components/UserActions";
 import Cards from "../components/Cards";
 import GameActions from "../components/GameActions";
 import GameDetails from "../components/GameDetails";
+import { GamesList } from "../components/GamesList";
 
 const Game = () => {
 
@@ -15,6 +16,7 @@ const Game = () => {
         <UserActions />
         <GameActions />
         <GameDetails />
+        <GamesList />
       </div>
     </div>
   );

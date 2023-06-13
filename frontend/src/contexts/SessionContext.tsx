@@ -25,6 +25,8 @@ interface SessionContextProps {
   currentVote: Vote | null;
   roundResult: GameRoundResult | null;
   players: Player[];
+  sessions: Game[];
+  activateGame: (gameId: string) => Promise<void>;
   setVote: (cardValue: CardValue | null) => Promise<void>;
   isGameActionDisabled: boolean;
   startNewGame: () => Promise<void>;
@@ -38,6 +40,8 @@ export const SessionContext = createContext<SessionContextProps>({
   isGameActionDisabled: false,
   roundResult: null,
   players: [],
+  sessions: [],
+  activateGame: async () => {},
   setVote: async () => {},
   startNewGame: async () => {},
   leaveGame: async () => {},
@@ -54,6 +58,7 @@ export const SessionProvider = ({
   const [game, setGame] = useState<Game | null>(null);
   const [currentVote, setCurrentVote] = useState<Vote | null>(null);
   const [roundResult, setRoundResult] = useState<GameRoundResult | null>(null);
+  const [sessions, setSessions] = useState<Game[]>([]);
   const [players, setPlayers] = useState<Player[]>([]);
   const { user, clientId } = useUserContext();
 
@@ -84,19 +89,14 @@ export const SessionProvider = ({
           jsonrpc: "2.0",
           method: "reset_selection",
           id: clientId,
-          params: [game.id],
+          params: [game?.id],
         }),
       });
-
-      if (res.ok) {
-        setCurrentVote(null);
-      }
+      setCurrentVote(null);
     }
-  }
+  };
 
   const startNewGame = async () => {
-    console.log(user);
-    
     const res = await fetch("/rpc", {
       method: "POST",
       body: JSON.stringify({
@@ -112,19 +112,22 @@ export const SessionProvider = ({
 
     setGame({
       id: gameId,
-      code: gameId,
-      name: "My Game",
+      isOwner: true,
     });
 
+    setSessions([
+      ...sessions,
+      {
+        id: gameId,
+        isOwner: true,
+      },
+    ]);
+
     Cookies.set("gameId", gameId);
-  }
+  };
 
   const leaveGame = async () => {
     if (!game || !user) return;
-
-    setGame({
-      ...game,
-    });
 
     const res = await fetch("/rpc", {
       method: "POST",
@@ -137,53 +140,61 @@ export const SessionProvider = ({
 
     if (res.ok) {
       setGame(null);
+      Cookies.remove("gameId");
+      // get sessions again
+      const sessions = await getSessions();
+      setSessions(sessions);
     }
-  }
+  };
 
   const joinGame = async (gameId: string) => {
     if (!user) return;
 
-    const res = await fetch("/rpc", {
-      method: "POST",
-      body: JSON.stringify({
-        jsonrpc: "2.0",
-        method: "join_session",
-        params: [Number(gameId)],
-        id: clientId,
-      }),
-    }).then((res) => res.json());
+    if (sessions.find((s) => s.id == gameId)) {
+      activateGame(gameId);
+      return;
+    } else {
+      const res = await fetch("/rpc", {
+        method: "POST",
+        body: JSON.stringify({
+          jsonrpc: "2.0",
+          method: "join_session",
+          params: [Number(gameId)],
+          id: clientId,
+        }),
+      }).then((res) => res.json());
 
-    if (!res.error) {
-      setGame({
-        id: gameId,
-        code: gameId,
-        name: "My Game",
-      });
+      if (!res.error) {
+        setGame({
+          id: gameId,
+          isOwner: false,
+        });
 
-      const selectionResponse = await getSelections();
+        const selectionResponse = await getSelections();
+      }
     }
-  }
+  };
 
   const getSelections = async () => {
     const res = await fetch("/rpc", {
       method: "POST",
       body: JSON.stringify({
         jsonrpc: "2.0",
-        method: "get_selections",
+        method: "get_session",
         id: clientId,
         params: [game?.id],
       }),
     }).then((res) => res.json());
 
+    if (res.error) return;
+
     const selections = res.result;
+    const { players } = selections;
 
-    if (selections.every((s: any) => s.selection)) {
-      const sum = selections.reduce(
-        (acc: number, s: any) => acc + s.selection,
-        0
-      );
+    if (players.every((s: any) => s.selection)) {
+      const sum = players.reduce((acc: number, s: any) => acc + s.selection, 0);
 
-      const average = Math.round(sum / selections.length);
+      const average = Math.round(sum / players.length);
       const consensus = getClosestFibonacci(average);
 
       setRoundResult((prev) => ({
@@ -193,11 +204,63 @@ export const SessionProvider = ({
       }));
 
       return null;
+    } else {
+      setRoundResult(null);
     }
 
     return res.result;
-  }
-  
+  };
+
+  const getSessions = async () => {
+    const res = await fetch("/rpc", {
+      method: "POST",
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        method: "get_sessions",
+        id: clientId,
+      }),
+    }).then((res) => res.json());
+
+    return res.result;
+  };
+
+  const activateGame = async (id: string) => {
+    if(!user) return;
+    
+    const res = await fetch("/rpc", {
+      method: "POST",
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        method: "get_session",
+        id: clientId,
+        params: [id],
+      }),
+    }).then((res) => res.json());
+
+    if (res.error) return;
+
+    // find me, and if I have a selection, set current vote
+    if (
+      res.result.players.find(
+        (p: any) => p.username == user?.username && p.selection
+      )
+    ) {
+      setCurrentVote({
+        cardValue: res.result.players.find(
+          (p: any) => p.username == user?.username
+        ).selection,
+        username: user.username
+      });
+    }
+
+    setGame(() => ({
+      id,
+      isOwner: res.result.user_is_owner,
+    }));
+
+    Cookies.set("gameId", id);
+  };
+
   useEffect(() => {
     if (!game?.id) return;
     const interval = setInterval(() => {
@@ -213,20 +276,40 @@ export const SessionProvider = ({
       currentVote,
       isGameActionDisabled,
       roundResult,
+      sessions,
+      activateGame,
       setVote,
       startNewGame,
       leaveGame,
       joinGame,
     };
-  }, [game, currentVote, isGameActionDisabled, roundResult, user]);
+  }, [
+    game,
+    currentVote,
+    isGameActionDisabled,
+    roundResult,
+    user,
+    sessions,
+    setVote,
+    startNewGame,
+    leaveGame,
+    joinGame,
+  ]);
 
   useEffect(() => {
     const gameId = Cookies.get("gameId");
+    getSessions().then((sessions) => {
+      // map through sessions and add isOwner property from user_is_owner field
+      sessions = sessions.map((s: any) => ({
+        ...s,
+        isOwner: s.user_is_owner,
+      }));
+      setSessions(sessions);
+    });
     if (gameId && user) {
       setGame({
         id: gameId,
-        code: gameId,
-        name: "My Game",
+        isOwner: false,
       });
     }
   }, [user]);
