@@ -7,14 +7,15 @@ const GameDetails = () => {
     <div className="flex flex-col border-4 rounded-lg p-4 gap-2">
       <div>
         Game code:
-        <span className="font-bold text-green-500">&nbsp;{game?.code}</span>
+        <span className="font-bold text-green-500">&nbsp;{game?.id}</span>
       </div>
       <div>
-        Latest consensus:
+        Closest fibonacci:
         <span className="font-bold text-green-500">
           &nbsp;{roundResult?.consensus}
         </span>
       </div>
+      {game?.isOwner && <div className="font-bold text-green-500">You are the owner 👑</div>}
     </div>
   );
 };
