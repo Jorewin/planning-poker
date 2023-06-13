@@ -13,6 +13,7 @@ import {
   Game,
   GameRoundResult,
   Player,
+  Story,
   Vote,
 } from "../types";
 import { useUserContext } from "./UserContext";
@@ -26,12 +27,21 @@ interface SessionContextProps {
   roundResult: GameRoundResult | null;
   players: Player[];
   sessions: Game[];
+  stories: Story[];
   activateGame: (gameId: string) => Promise<void>;
   setVote: (cardValue: CardValue | null) => Promise<void>;
   isGameActionDisabled: boolean;
   startNewGame: () => Promise<void>;
   leaveGame: () => Promise<void>;
   joinGame: (gameId: string) => Promise<void>;
+  addStory: (summary: string, description: string) => Promise<void>;
+  deleteStory: (storyId: string) => Promise<void>;
+  addTask: (
+    storyId: string,
+    summary: string,
+    estimate: CardValue
+  ) => Promise<void>;
+  deleteTask: (storyId: string, taskId: string) => Promise<void>;
 }
 
 export const SessionContext = createContext<SessionContextProps>({
@@ -41,11 +51,16 @@ export const SessionContext = createContext<SessionContextProps>({
   roundResult: null,
   players: [],
   sessions: [],
+  stories: [],
   activateGame: async () => {},
   setVote: async () => {},
   startNewGame: async () => {},
   leaveGame: async () => {},
   joinGame: async () => {},
+  addStory: async () => {},
+  deleteStory: async () => {},
+  addTask: async () => {},
+  deleteTask: async () => {},
 });
 
 export const useSessionContext = () => useContext(SessionContext);
@@ -60,6 +75,7 @@ export const SessionProvider = ({
   const [roundResult, setRoundResult] = useState<GameRoundResult | null>(null);
   const [sessions, setSessions] = useState<Game[]>([]);
   const [players, setPlayers] = useState<Player[]>([]);
+  const [stories, setStories] = useState<Story[]>([]);
   const { user, clientId } = useUserContext();
 
   const isGameActionDisabled = !game?.id || !user || currentVote?.cardValue;
@@ -198,8 +214,13 @@ export const SessionProvider = ({
 
     const selections = res.result;
     const { players } = selections;
+    const { stories: storiesResponse } = selections;
 
     setPlayers(players);
+
+    if (JSON.stringify(stories) !== JSON.stringify(storiesResponse)) {
+      setStories(storiesResponse);
+    }
 
     if (players.every((s: any) => s.selection)) {
       const sum = players.reduce((acc: number, s: any) => acc + s.selection, 0);
@@ -271,6 +292,105 @@ export const SessionProvider = ({
     Cookies.set("gameId", id);
   };
 
+  const addStory = async (summary: string, description: string) => {
+    const res = await fetch("/rpc", {
+      method: "POST",
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        method: "create_story",
+        id: clientId,
+        params: [game?.id, summary, description],
+      }),
+    }).then((res) => res.json());
+
+    if (res.error) return;
+
+    setStories((prev) => [
+      ...prev,
+      {
+        id: res.result,
+        summary,
+        description,
+        tasks: [],
+      },
+    ]);
+  };
+
+  const deleteStory = async (id: string) => {
+    const res = await fetch("/rpc", {
+      method: "POST",
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        method: "delete_story",
+        id: clientId,
+        params: [id],
+      }),
+    }).then((res) => res.json());
+
+    if (res.error) return;
+
+    setStories((prev) => prev.filter((s) => s.id != id));
+  };
+
+  const addTask = async (storyId: string, summary: string, estimation: CardValue) => {
+    const res = await fetch("/rpc", {
+      method: "POST",
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        method: "create_task",
+        id: clientId,
+        params: [storyId, summary, estimation],
+      }),
+    }).then((res) => res.json());
+
+    if (res.error) return;
+
+    setStories((prev) =>
+      prev.map((s) =>
+        s.id == storyId
+          ? {
+              ...s,
+              tasks: [
+                ...s.tasks,
+                {
+                  id: res.result,
+                  summary,
+                  estimation,
+                },
+              ],
+            }
+          : s
+      )
+    );
+
+    return res.result;
+  };
+
+  const deleteTask = async (storyId: string, taskId: string) => {
+    const res = await fetch("/rpc", {
+      method: "POST",
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        method: "delete_task",
+        id: clientId,
+        params: [taskId],
+      }),
+    }).then((res) => res.json());
+
+    if (res.error) return;
+
+    setStories((prev) =>
+      prev.map((s) =>
+        s.id == storyId
+          ? {
+              ...s,
+              tasks: s.tasks.filter((t) => t.id != taskId),
+            }
+          : s
+      )
+    );
+  };
+
   useEffect(() => {
     if (!game?.id) return;
     const interval = setInterval(() => {
@@ -288,11 +408,16 @@ export const SessionProvider = ({
       roundResult,
       sessions,
       players,
+      stories,
+      addStory,
       activateGame,
       setVote,
       startNewGame,
       leaveGame,
       joinGame,
+      deleteStory,
+      addTask,
+      deleteTask,
     };
   }, [
     game?.id,
@@ -301,6 +426,7 @@ export const SessionProvider = ({
     roundResult,
     user,
     sessions,
+    stories,
     setVote,
     startNewGame,
     leaveGame,
