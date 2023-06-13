@@ -188,7 +188,7 @@ def reset_selection(player_id: int, **_):
 
 @rpc_method
 @register_player
-def get_selections(player_id: int, **_) -> list[int] | None:
+def get_selections(player_id: int, **_) -> list[dict[str, int | str]]:
     """Gets all selections in this player's session if every player is ready.
 
     :param player_id: current player's id
@@ -202,10 +202,9 @@ def get_selections(player_id: int, **_) -> list[int] | None:
 
     session = player.session
 
-    if session.ready_players_number != session.players_number:
-        return None
-
     players = session.player_set.all()
-    selections = [x.selection for x in players]
 
-    return selections
+    if session.ready_players_number != session.players_number:
+        return [{"player_id": x.session.id} for x in players]
+
+    return [{"player_id": x.session.id, "selection": x.selection} for x in players]

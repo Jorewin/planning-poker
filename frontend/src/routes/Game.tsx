@@ -12,12 +12,8 @@ import { CardValues } from "../types";
 import Cards from "../components/Cards";
 import GameActions from "../components/GameActions";
 import GameDetails from "../components/GameDetails";
-import Rounds from "../components/Rounds";
 
 const Game = () => {
-  const { user } = useUserContext();
-  const { game, currentRound, currentRoundResult, currentVote } =
-    useSessionContext();
 
   return (
     <div className="flex">
@@ -28,7 +24,6 @@ const Game = () => {
         <Rename />
         <GameActions />
         <GameDetails />
-        <Rounds />
       </div>
     </div>
   );

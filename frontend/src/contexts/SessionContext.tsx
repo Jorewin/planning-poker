@@ -1,154 +1,241 @@
 // a custom react context to store the session data with types from ../types
 
-import React, { createContext, useContext, useMemo, useState } from "react";
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import {
   CardValue,
   CardValues,
   Game,
-  GameRound,
   GameRoundResult,
-  GameStatus,
+  Player,
   Vote,
 } from "../types";
 import { useUserContext } from "./UserContext";
 import { v4 as uuidv4 } from "uuid";
+import { getClosestFibonacci } from "../utils";
 
 interface SessionContextProps {
   game: Game | null;
-  currentRound: GameRound | null;
-  currentRoundResult: GameRoundResult | null;
   currentVote: Vote | null;
+  roundResult: GameRoundResult | null;
+  players: Player[];
   setVote: (cardValue: CardValue | null) => void;
   isGameActionDisabled: boolean;
-  startRound: () => void;
-  finishRound: () => void;
   startNewGame: () => void;
+  leaveGame: () => void;
+  joinGame: (gameId: string) => void;
 }
 
 export const SessionContext = createContext<SessionContextProps>({
   game: null,
-  currentRound: null,
-  currentRoundResult: null,
   currentVote: null,
-  setVote: () => {},
   isGameActionDisabled: false,
-  startRound: () => {},
-  finishRound: () => {},
+  roundResult: null,
+  players: [],
+  setVote: () => {},
   startNewGame: () => {},
+  leaveGame: () => {},
+  joinGame: () => {},
 });
 
 export const useSessionContext = () => useContext(SessionContext);
 
 export const SessionProvider: React.FC = ({ children }) => {
   const [game, setGame] = useState<Game | null>(null);
-  const [currentRound, setCurrentRound] = useState<GameRound | null>(null);
-  const [currentRoundResult, setCurrentRoundResult] =
-    useState<GameRoundResult | null>(null);
   const [currentVote, setCurrentVote] = useState<Vote | null>(null);
+  const [roundResult, setRoundResult] = useState<GameRoundResult | null>(null);
+  const [players, setPlayers] = useState<Player[]>([]);
   const { user } = useUserContext();
 
-  function setVote(cardValue: CardValue) {
-    if (isGameActionDisabled) return;
-    setCurrentVote({ cardValue: cardValue, userId: user?.id } as Vote);
+  const isGameActionDisabled = !game?.id || !user || currentVote?.cardValue;
+  
+  async function setVote(cardValue: CardValue) {
+    if (!game || !user) return;
 
-    const updatedVotes = currentRound?.votes
-      .filter((vote) => vote.userId !== user?.id)
-      .concat({ cardValue: cardValue, userId: user?.id } as Vote);
+    if (cardValue) {
+      const makeSelectionResullt = await fetch("/rpc", {
+        method: "POST",
+        body: JSON.stringify({
+          jsonrpc: "2.0",
+          method: "make_selection",
+          params: [cardValue],
+          id: user?.id,
+        }),
+      }).then((res) => res.json());
 
-    setCurrentRound({
-      ...currentRound,
-      votes: updatedVotes ? updatedVotes : [],
-      result: null,
-    });
+      if (makeSelectionResullt.error) return;
+
+      const selections = await getSelections();
+      setCurrentVote({ cardValue: cardValue, userId: user?.id } as Vote);
+    } else {
+      const res = await fetch("/rpc", {
+        method: "POST",
+        body: JSON.stringify({
+          jsonrpc: "2.0",
+          method: "reset_selection",
+          id: user?.id,
+        }),
+      });
+
+      if (res.ok) {
+        setCurrentVote(null);
+      }
+    }
   }
 
-  function startRound() {
-    if ((!game && !user) || game?.status === GameStatus.ROUND_IN_PROGRESS)
-      return;
+  async function startNewGame() {
+    if (!user) return;
 
-    const round = {
-      gameId: game?.id,
-      status: GameStatus.ROUND_IN_PROGRESS,
-      votes: [],
-      result: null,
-    } as GameRound;
+    const res = await fetch("/rpc", {
+      method: "POST",
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        method: "create_session",
+        id: user?.id,
+      }),
+    }).then((res) => res.json());
 
-    setCurrentRound(round);
-    setCurrentVote(null);
+    const gameId = res.result;
+
     setGame({
-      ...game,
-      status: GameStatus.ROUND_IN_PROGRESS,
-    });
-  }
-
-  function finishRound() {
-    if (!currentRound || !game) return;
-
-    const average = Math.round(
-      currentRound?.votes.reduce((acc, vote) => acc + vote.cardValue, 0) /
-        currentRound?.votes.length
-    );
-
-    // now round the average to the closest fibonacci number
-    const closestFibonacci = CardValues.reduce((prev, curr) =>
-      Math.abs(curr - average) < Math.abs(prev - average) ? curr : prev
-    );
-
-    // consensus is ratio of votes that are the same as the average
-    const consensus =
-      currentRound?.votes.filter((vote) => vote.cardValue === average).length /
-      currentRound?.votes.length;
-
-    const result = {
-      average: closestFibonacci,
-      consensus,
-    } as GameRoundResult;
-
-    setCurrentRoundResult(result);
-    setGame({
-      ...game,
-      status: GameStatus.READY,
-      roundResults: [...game.roundResults, result],
-    });
-  }
-
-  function startNewGame() {
-    setGame({
-      code:uuidv4().substr(0, 4).toUpperCase(),
-      id: uuidv4(),
-      status: GameStatus.READY,
-      rounds: [],
+      id: gameId,
+      code: gameId,
       users: [user],
-      currentRound: null,
       name: "My Game",
-      roundResults: [],
-    } as Game);
-    setCurrentVote(null);
+    });
   }
 
-  const isGameActionDisabled = useMemo(() => {
-    return game?.status !== GameStatus.ROUND_IN_PROGRESS && !!user;
-  }, [game, user]);
+  async function leaveGame() {
+    if (!game || !user) return;
+
+    setGame({
+      ...game,
+      users: [user],
+    });
+
+    const res = await fetch("/rpc", {
+      method: "POST",
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        method: "leave_session",
+      }),
+    });
+
+    if (res.ok) {
+      setGame(null);
+    }
+  }
+
+  async function joinGame(gameId: string) {    
+    if (!user) return;
+
+    const res = await fetch("/rpc", {
+      method: "POST",
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        method: "join_session",
+        params: [Number(gameId)],
+        id: user?.id,
+      }),
+    }).then((res) => res.json());
+
+    if (!res.error) {
+      setGame({
+        id: gameId,
+        code: gameId,
+        users: [user],
+        name: "My Game",
+      });
+
+      const selectionResponse = await getSelections();
+    }
+  }
+
+  async function getSelections() {
+    const res = await fetch("/rpc", {
+      method: "POST",
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        method: "get_selections",
+        id: user?.id,
+      }),
+    }).then((res) => res.json());
+
+    const selections = res.result;
+
+    if (selections.every((s: any) => s.selection)) {
+      const sum = selections.reduce(
+        (acc: number, s: any) => acc + s.selection,
+        0
+      );
+
+      const average = Math.round(sum / selections.length);
+      const consensus = getClosestFibonacci(average);
+
+      setRoundResult((prev) => ({ 
+        ...prev,
+        consensus,
+        average,
+      }))
+
+      // await fetch("/rpc", {
+      //   method: "POST",
+      //   body: JSON.stringify({
+      //     jsonrpc: "2.0",
+      //     method: "reset_selection",
+      //     id: user?.id,
+      //   }),
+      // });
+
+      // console.log("reset selection");
+
+      // setCurrentVote(null);
+      return null;
+    }
+
+    return res.result;
+  }
+
+  useEffect(() => {
+    if (!game?.id) {
+      fetch("/rpc", {
+        method: "POST",
+        body: JSON.stringify({
+          jsonrpc: "2.0",
+          method: "leave_session",
+        }),
+      });
+      // setCurrentVote(null);
+      setRoundResult(null);
+    }
+  }, [game]);
+
+  useEffect(() => {
+    if (!game?.id) return;
+    const interval = setInterval(() => {
+      getSelections();
+    }, 1500);
+
+    return () => clearInterval(interval);
+  }, [game?.id]);
 
   const api = useMemo(() => {
     return {
       game,
-      currentRound,
-      currentRoundResult,
       currentVote,
-      setVote,
       isGameActionDisabled,
-      startRound,
-      finishRound,
+      roundResult,
+      setVote,
       startNewGame,
+      leaveGame,
+      joinGame,
     };
-  }, [
-    game,
-    currentRound,
-    currentRoundResult,
-    currentVote,
-    isGameActionDisabled,
-  ]);
+  }, [game, currentVote, isGameActionDisabled, roundResult]);
 
   return (
     <SessionContext.Provider value={api}>{children}</SessionContext.Provider>

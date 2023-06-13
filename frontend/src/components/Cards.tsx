@@ -1,5 +1,5 @@
 import { useSessionContext } from "../contexts/SessionContext";
-import { CardValues, GameStatus } from "../types";
+import { CardValues } from "../types";
 import Card from "./Card";
 
 const Cards = () => {
