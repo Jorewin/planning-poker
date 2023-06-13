@@ -1,6 +1,6 @@
 import { CardValue, CardValues, Story } from "../types";
 import { useSessionContext } from "../contexts/SessionContext";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 function StoryCard({ story }: { story: Story }) {
   const { deleteStory, addTask, deleteTask } = useSessionContext();
@@ -55,7 +55,10 @@ function StoryCard({ story }: { story: Story }) {
           {story.tasks.map((task) => (
             <div className="flex gap-4">
               {task.summary}: {task.estimation}
-              <button className="text-red-500 hover:bg-red-200 py-1 px-2 rounded-md text-sm">
+              <button
+                  className="text-red-500 hover:bg-red-200 py-1 px-2 rounded-md text-sm"
+                  onClick={() => deleteTask(story.id, task.id)}
+              >
                 Delete
               </button>
             </div>
